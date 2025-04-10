@@ -114,7 +114,7 @@ const SAMPLE_MESSAGES: Record<string, Message[]> = {
       id: 'm5',
       senderId: 'current-user',
       receiverId: '2',
-      content: 'Hi Maya, I see you're looking for a place in Midtown. That's where I'm looking too!',
+      content: "Hi Maya, I see you're looking for a place in Midtown. That's where I'm looking too!",
       read: true,
       createdAt: '2025-04-08T14:30:00Z'
     },
@@ -122,7 +122,7 @@ const SAMPLE_MESSAGES: Record<string, Message[]> = {
       id: 'm6',
       senderId: '2',
       receiverId: 'current-user',
-      content: 'Hi there! Yes, I'd love to find a place close to work. Have you found any good listings?',
+      content: "Hi there! Yes, I'd love to find a place close to work. Have you found any good listings?",
       read: true,
       createdAt: '2025-04-08T15:45:00Z'
     },
@@ -130,7 +130,7 @@ const SAMPLE_MESSAGES: Record<string, Message[]> = {
       id: 'm7',
       senderId: 'current-user',
       receiverId: '2',
-      content: 'I've been looking at a few buildings on StreetEasy. Would you be interested in trying to see some places together?',
+      content: "I've been looking at a few buildings on StreetEasy. Would you be interested in trying to see some places together?",
       read: true,
       createdAt: '2025-04-08T16:30:00Z'
     },
