@@ -48,8 +48,10 @@ export async function updateUserProfile(userId: string, profileData: any) {
 }
 
 export async function uploadProfileImage(userId: string, file: File) {
-  // Create a unique file path including the user ID
-  const filePath = `${userId}/${Date.now()}-${file.name}`;
+  // Create a unique file path without spaces and special characters
+  const fileExt = file.name.split('.').pop();
+  const safeFileName = `${Date.now()}.${fileExt}`;
+  const filePath = `${userId}/${safeFileName}`;
   
   // Upload the file to Supabase storage
   const { data: uploadData, error: uploadError } = await supabase.storage
