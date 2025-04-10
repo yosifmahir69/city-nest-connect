@@ -39,7 +39,7 @@ const Messaging = () => {
           throw error;
         }
         
-        setConversations(data);
+        setConversations(data || []);
         
         // If there's a conversation, select the first one by default
         if (data.length > 0 && !selectedConversation) {
@@ -63,7 +63,7 @@ const Messaging = () => {
     const intervalId = setInterval(fetchConversations, 30000);
     
     return () => clearInterval(intervalId);
-  }, [user, toast]);
+  }, [user, toast, selectedConversation]);
   
   // Fetch messages for selected conversation
   useEffect(() => {
@@ -77,11 +77,16 @@ const Messaging = () => {
           throw error;
         }
         
-        setMessages(data);
-        
-        // Mark messages as read
-        if (user) {
-          await markMessagesAsRead(selectedConversation.id, user.id);
+        // Ensure we're setting properly typed Message[] objects
+        if (data) {
+          setMessages(data);
+          
+          // Mark messages as read
+          if (user) {
+            await markMessagesAsRead(selectedConversation.id, user.id);
+          }
+        } else {
+          setMessages([]);
         }
       } catch (error) {
         console.error('Error fetching messages:', error);
@@ -129,7 +134,9 @@ const Messaging = () => {
       
       // Refresh messages
       const { data } = await getMessages(selectedConversation.id);
-      setMessages(data);
+      if (data) {
+        setMessages(data);
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast({

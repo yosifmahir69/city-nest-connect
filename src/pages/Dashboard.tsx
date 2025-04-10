@@ -22,6 +22,18 @@ interface FilterState {
   lifestyleTags: string[];
 }
 
+// Interface to match what FilterSidebar expects
+interface SidebarFilterState {
+  gender: string[];
+  company: string[];
+  officeLocation: string[];
+  neighborhood: string[];
+  budgetMin: number;
+  budgetMax: number;
+  hasCar: boolean;
+  lifestyleTags: string[];
+}
+
 const Dashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -89,6 +101,30 @@ const Dashboard = () => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   };
 
+  // Convert from our FilterState to SidebarFilterState for the FilterSidebar component
+  const convertToSidebarFilters = (filters: FilterState): SidebarFilterState => {
+    return {
+      gender: filters.gender,
+      company: filters.company ? [filters.company] : [],
+      officeLocation: filters.officeLocation ? [filters.officeLocation] : [],
+      neighborhood: filters.neighborhood,
+      budgetMin: filters.budgetMin,
+      budgetMax: filters.budgetMax,
+      hasCar: filters.hasCar === null ? false : filters.hasCar,
+      lifestyleTags: filters.lifestyleTags
+    };
+  };
+
+  // Convert from SidebarFilterState back to our FilterState
+  const handleSidebarFilterChange = (sidebarFilters: Partial<SidebarFilterState>) => {
+    const updatedFilters: Partial<FilterState> = {
+      ...sidebarFilters,
+      company: sidebarFilters.company?.[0] || '',
+      officeLocation: sidebarFilters.officeLocation?.[0] || '',
+    };
+    handleFilterChange(updatedFilters);
+  };
+
   const applyFilters = () => {
     fetchRoommates();
   };
@@ -106,6 +142,9 @@ const Dashboard = () => {
     });
     fetchRoommates();
   };
+
+  // Prepare sidebar filters
+  const sidebarFilters = convertToSidebarFilters(filters);
 
   return (
     <div className="flex min-h-screen bg-gray-50">

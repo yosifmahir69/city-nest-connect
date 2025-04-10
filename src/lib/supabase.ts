@@ -1,5 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { transformProfile, transformMessage, transformConversation } from './data-transformers';
+import { User, Conversation, Message } from '@/types';
 
 // User related functions
 export async function signUp(email: string, password: string) {
@@ -97,29 +99,7 @@ export async function getUserProfile(userId: string) {
   
   // Transform from snake_case to camelCase for frontend use
   if (data) {
-    const transformedData = {
-      id: data.id,
-      email: '', // We don't store email in profiles table
-      fullName: data.full_name,
-      profileImage: data.profile_image_url,
-      jobType: data.job_type,
-      company: data.company,
-      officeLocation: data.office_location,
-      startDate: data.start_date,
-      endDate: data.end_date,
-      gender: data.gender,
-      preferredRoommateGenders: data.preferred_roommate_genders || [],
-      hasCar: data.has_car || false,
-      preferredNeighborhoods: data.preferred_neighborhoods || [],
-      budgetMin: data.budget_min,
-      budgetMax: data.budget_max,
-      lifestyleTags: data.lifestyle_tags || [],
-      firstTimeInCity: data.first_time_in_city || false,
-      additionalPreferences: data.additional_preferences || [],
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
-    };
-    
+    const transformedData = transformProfile(data);
     return { data: transformedData, error: null };
   }
   
@@ -162,39 +142,18 @@ export async function getRoommates(filters: any = {}) {
   }
   
   // Transform the data for frontend use
-  const transformedData = data?.map((profile) => ({
-    id: profile.id,
-    email: '', // We don't expose email addresses
-    fullName: profile.full_name,
-    profileImage: profile.profile_image_url,
-    jobType: profile.job_type,
-    company: profile.company,
-    officeLocation: profile.office_location,
-    startDate: profile.start_date,
-    endDate: profile.end_date,
-    gender: profile.gender,
-    preferredRoommateGenders: profile.preferred_roommate_genders || [],
-    hasCar: profile.has_car || false,
-    preferredNeighborhoods: profile.preferred_neighborhoods || [],
-    budgetMin: profile.budget_min,
-    budgetMax: profile.budget_max,
-    lifestyleTags: profile.lifestyle_tags || [],
-    firstTimeInCity: profile.first_time_in_city || false,
-    additionalPreferences: profile.additional_preferences || [],
-    createdAt: profile.created_at,
-    updatedAt: profile.updated_at
-  }));
+  const transformedData = data?.map(profile => transformProfile(profile));
   
   return { data: transformedData || [], error: null };
 }
 
 // For messaging functions
 export async function getConversations(userId: string) {
-  // First, get conversation IDs where the user is a participant
-  const { data: conversationData, error: conversationError } = await supabase
-    .from('conversations')
-    .select('id, created_at')
-    .or(`participant1_id.eq.${userId},participant2_id.eq.${userId}`);
+  // We'll use a raw query since the TypeScript types for RPC aren't available
+  const { data: conversationData, error: conversationError } = await supabase.rpc(
+    'get_conversations',
+    { user_id: userId }
+  );
   
   if (conversationError || !conversationData) {
     console.error('Error fetching conversations:', conversationError);
@@ -203,25 +162,11 @@ export async function getConversations(userId: string) {
   
   // For each conversation, get the other participant's info and the last message
   const conversations = await Promise.all(
-    conversationData.map(async (conv) => {
-      // Get conversation details
-      const { data: details, error: detailsError } = await supabase
-        .from('conversations')
-        .select('*, messages!messages_conversation_id_fkey(id, sender_id, content, created_at, read)')
-        .eq('id', conv.id)
-        .order('created_at', { foreignTable: 'messages', ascending: false })
-        .limit(1, { foreignTable: 'messages' })
-        .single();
-      
-      if (detailsError || !details) {
-        console.error('Error fetching conversation details:', detailsError);
-        return null;
-      }
-      
+    conversationData.map(async (conv: any) => {
       // Determine the other participant
-      const otherParticipantId = details.participant1_id === userId 
-        ? details.participant2_id 
-        : details.participant1_id;
+      const otherParticipantId = conv.participant1_id === userId 
+        ? conv.participant2_id 
+        : conv.participant1_id;
       
       // Get the other participant's profile
       const { data: otherUser } = await getUserProfile(otherParticipantId);
@@ -230,85 +175,81 @@ export async function getConversations(userId: string) {
         return null;
       }
       
-      const lastMessage = details.messages?.[0];
+      // Get the last message
+      const { data: messagesData } = await supabase.rpc(
+        'get_messages_for_conversation',
+        { conversation_id_param: conv.id }
+      ).order('created_at', { ascending: false }).limit(1);
       
-      return {
-        id: conv.id,
-        participantIds: [details.participant1_id, details.participant2_id],
-        lastMessageId: lastMessage?.id || '',
-        lastMessageContent: lastMessage?.content || 'Start a conversation',
-        lastMessageTime: lastMessage?.created_at || details.created_at,
-        unreadCount: lastMessage && lastMessage.sender_id !== userId && !lastMessage.read ? 1 : 0,
-        otherUser
-      };
+      const lastMessage = messagesData && messagesData.length > 0 ? messagesData[0] : null;
+      
+      // Count unread messages
+      const { count } = await supabase.rpc(
+        'count_unread_messages',
+        { 
+          conversation_id_param: conv.id,
+          user_id_param: userId
+        }
+      );
+      
+      // Transform the data
+      return transformConversation(
+        conv,
+        otherUser,
+        lastMessage,
+        count || 0
+      );
     })
   );
   
   return { 
-    data: conversations.filter(Boolean), 
+    data: conversations.filter(Boolean) as Conversation[], 
     error: null 
   };
 }
 
 export async function getMessages(conversationId: string) {
-  const { data, error } = await supabase
-    .from('messages')
-    .select('*')
-    .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: true });
+  const { data, error } = await supabase.rpc(
+    'get_messages_for_conversation',
+    { conversation_id_param: conversationId }
+  ).order('created_at', { ascending: true });
   
   if (error) {
     console.error('Error fetching messages:', error);
     return { data: [], error };
   }
   
-  return { data, error: null };
+  // Transform data for frontend use
+  const transformedData = data?.map((message: any) => transformMessage(message));
+  
+  return { data: transformedData || [], error: null };
 }
 
 export async function sendMessage(senderId: string, receiverId: string, content: string) {
   // First, check if conversation exists
-  const { data: existingConv, error: convError } = await supabase
-    .from('conversations')
-    .select('id')
-    .or(`and(participant1_id.eq.${senderId},participant2_id.eq.${receiverId}),and(participant1_id.eq.${receiverId},participant2_id.eq.${senderId})`)
-    .limit(1)
-    .maybeSingle();
-  
-  let conversationId;
-  
-  // If no conversation exists, create one
-  if (!existingConv) {
-    const { data: newConv, error: createError } = await supabase
-      .from('conversations')
-      .insert({
-        participant1_id: senderId,
-        participant2_id: receiverId
-      })
-      .select()
-      .single();
-    
-    if (createError) {
-      console.error('Error creating conversation:', createError);
-      return { data: null, error: createError };
+  const { data: existingConv, error: convError } = await supabase.rpc(
+    'get_or_create_conversation',
+    { 
+      participant1_id_param: senderId, 
+      participant2_id_param: receiverId 
     }
-    
-    conversationId = newConv.id;
-  } else {
-    conversationId = existingConv.id;
+  );
+  
+  if (convError || !existingConv) {
+    console.error('Error with conversation:', convError);
+    return { data: null, error: convError };
   }
   
   // Send the message
-  const { data, error } = await supabase
-    .from('messages')
-    .insert({
-      conversation_id: conversationId,
-      sender_id: senderId,
-      receiver_id: receiverId,
-      content,
-      read: false
-    })
-    .select()
-    .single();
+  const { data, error } = await supabase.rpc(
+    'create_message',
+    {
+      conversation_id_param: existingConv.id,
+      sender_id_param: senderId,
+      receiver_id_param: receiverId,
+      content_param: content
+    }
+  );
   
   if (error) {
     console.error('Error sending message:', error);
@@ -319,12 +260,13 @@ export async function sendMessage(senderId: string, receiverId: string, content:
 }
 
 export async function markMessagesAsRead(conversationId: string, userId: string) {
-  const { data, error } = await supabase
-    .from('messages')
-    .update({ read: true })
-    .eq('conversation_id', conversationId)
-    .eq('receiver_id', userId)
-    .eq('read', false);
+  const { data, error } = await supabase.rpc(
+    'mark_messages_as_read',
+    {
+      conversation_id_param: conversationId,
+      user_id_param: userId
+    }
+  );
   
   return { data, error };
 }
@@ -333,23 +275,19 @@ export async function markMessagesAsRead(conversationId: string, userId: string)
 export async function generateInviteCode(adminId: string) {
   const code = `INVITE-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
   
-  const { data, error } = await supabase
-    .from('invite_codes')
-    .insert({
-      code,
-      created_by: adminId,
-      created_at: new Date().toISOString()
-    })
-    .select()
-    .single();
+  const { data, error } = await supabase.rpc(
+    'create_invite_code',
+    {
+      code_param: code,
+      created_by_param: adminId
+    }
+  );
   
   return { data, error };
 }
 
 export async function getInviteCodes() {
-  const { data, error } = await supabase
-    .from('invite_codes')
-    .select('*')
+  const { data, error } = await supabase.rpc('get_invite_codes')
     .order('created_at', { ascending: false });
   
   return { data, error };
