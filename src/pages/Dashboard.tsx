@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -55,10 +56,12 @@ const Dashboard = () => {
     try {
       setIsLoading(true);
       
+      console.log('Fetching roommates with filters:', filters);
+      
       const appliedFilters = {
         ...filters,
         // Only include company if it has a value
-        ...(filters.company.length > 0 ? { company: filters.company[0] } : {}),
+        ...(filters.company.length > 0 ? { company: filters.company } : {}),
       };
       
       const { data, error } = await getRoommates(appliedFilters);
@@ -66,6 +69,8 @@ const Dashboard = () => {
       if (error) {
         throw error;
       }
+      
+      console.log('Roommates data:', data);
       
       // Filter by search query if provided
       let filteredData = data || [];
@@ -93,8 +98,17 @@ const Dashboard = () => {
 
   // Call fetchRoommates when component mounts or filters change
   useEffect(() => {
-    fetchRoommates();
-  }, [searchQuery, user]);
+    if (user) {
+      fetchRoommates();
+    }
+  }, [user]);
+  
+  // Fetch roommates when search query changes
+  useEffect(() => {
+    if (user) {
+      fetchRoommates();
+    }
+  }, [searchQuery]);
 
   const handleFilterChange = (newFilters: Partial<FilterState>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));

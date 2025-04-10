@@ -5,7 +5,7 @@ import { Database } from '@/integrations/supabase/types';
 // Define the raw types from the database
 export type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
-// Define the tables that aren't in the auto-generated types
+// Define the conversation table type
 export type ConversationRow = {
   id: string;
   participant1_id: string;
@@ -14,6 +14,7 @@ export type ConversationRow = {
   updated_at: string;
 };
 
+// Define the message table type
 export type MessageRow = {
   id: string;
   conversation_id: string;
@@ -24,6 +25,7 @@ export type MessageRow = {
   created_at: string;
 };
 
+// Define the invite code table type
 export type InviteCodeRow = {
   id: string;
   code: string;
