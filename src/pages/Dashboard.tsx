@@ -1,110 +1,20 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { RoommateCard } from '@/components/RoommateCard';
 import { FilterSidebar } from '@/components/FilterSidebar';
 import { User } from '@/types';
-import { Search, Filter, Sliders } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { getRoommates } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 
-// Placeholder data until Supabase integration
-const SAMPLE_ROOMMATES: User[] = [
-  {
-    id: '1',
-    email: 'alex@example.com',
-    fullName: 'Alex Johnson',
-    profileImage: 'https://randomuser.me/api/portraits/men/1.jpg',
-    jobType: 'internship',
-    company: 'Google',
-    officeLocation: 'Google – NYC 111 8th Ave',
-    startDate: '2025-06-01',
-    endDate: '2025-08-31',
-    gender: 'male',
-    preferredRoommateGenders: ['male', 'female'],
-    hasCar: true,
-    preferredNeighborhoods: ['Chelsea', 'West Village'],
-    budgetMin: 1200,
-    budgetMax: 2000,
-    lifestyleTags: ['Gym enthusiast', 'Early bird', 'Tech', 'Clean'],
-    firstTimeInCity: true,
-    additionalPreferences: ['Private bathroom', 'In-unit laundry'],
-    createdAt: '2025-04-01',
-    updatedAt: '2025-04-01'
-  },
-  {
-    id: '2',
-    email: 'maya@example.com',
-    fullName: 'Maya Rodriguez',
-    profileImage: 'https://randomuser.me/api/portraits/women/2.jpg',
-    jobType: 'fulltime',
-    company: 'Amazon',
-    officeLocation: 'Amazon – NYC 7 W 34th St',
-    startDate: '2025-07-15',
-    gender: 'female',
-    preferredRoommateGenders: ['female'],
-    hasCar: false,
-    preferredNeighborhoods: ['Midtown', 'Upper East Side'],
-    budgetMin: 1500,
-    budgetMax: 2500,
-    lifestyleTags: ['Social', 'Music', 'Travel', 'Non-smoker'],
-    firstTimeInCity: false,
-    additionalPreferences: ['Near subway', 'Pet-friendly building'],
-    createdAt: '2025-04-02',
-    updatedAt: '2025-04-02'
-  },
-  {
-    id: '3',
-    email: 'tyler@example.com',
-    fullName: 'Tyler Chang',
-    profileImage: 'https://randomuser.me/api/portraits/men/3.jpg',
-    jobType: 'internship',
-    company: 'Microsoft',
-    officeLocation: 'Microsoft – NYC 11 Times Square',
-    startDate: '2025-05-15',
-    endDate: '2025-08-15',
-    gender: 'male',
-    preferredRoommateGenders: ['male'],
-    hasCar: false,
-    preferredNeighborhoods: ['Financial District', 'Brooklyn'],
-    budgetMin: 1000,
-    budgetMax: 1800,
-    lifestyleTags: ['Night owl', 'Tech', 'Reading', 'Outdoors'],
-    firstTimeInCity: true,
-    additionalPreferences: ['Furnished apartment', 'Utilities included'],
-    createdAt: '2025-04-03',
-    updatedAt: '2025-04-03'
-  },
-  {
-    id: '4',
-    email: 'jordan@example.com',
-    fullName: 'Jordan Smith',
-    profileImage: 'https://randomuser.me/api/portraits/women/4.jpg',
-    jobType: 'fulltime',
-    company: 'Facebook',
-    officeLocation: 'Facebook – NYC 770 Broadway',
-    startDate: '2025-06-01',
-    gender: 'nonbinary',
-    preferredRoommateGenders: ['male', 'female', 'nonbinary', 'other'],
-    hasCar: true,
-    preferredNeighborhoods: ['East Village', 'Brooklyn'],
-    budgetMin: 1300,
-    budgetMax: 2200,
-    lifestyleTags: ['Vegetarian', 'Arts', 'Social', 'Non-drinker'],
-    firstTimeInCity: false,
-    additionalPreferences: ['Quiet building', 'Outdoor space'],
-    createdAt: '2025-04-04',
-    updatedAt: '2025-04-04'
-  }
-];
-
 interface FilterState {
   gender: string[];
-  company: string[];
-  officeLocation: string[];
+  company: string;
+  officeLocation: string;
   neighborhood: string[];
   budgetMin: number;
   budgetMax: number;
@@ -118,29 +28,36 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<FilterState>({
     gender: [],
-    company: [],
-    officeLocation: [],
+    company: '',
+    officeLocation: '',
     neighborhood: [],
     budgetMin: 500,
     budgetMax: 5000,
     hasCar: null,
     lifestyleTags: []
   });
-  const [roommates, setRoommates] = useState<User[]>(SAMPLE_ROOMMATES);
-  const [isLoading, setIsLoading] = useState(false);
+  const [roommates, setRoommates] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Function to fetch roommates with filters after Supabase integration
+  // Function to fetch roommates with filters
   const fetchRoommates = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await getRoommates(filters);
+      
+      const appliedFilters = {
+        ...filters,
+        // Only include company if it has a value
+        ...(filters.company ? { company: filters.company } : {}),
+      };
+      
+      const { data, error } = await getRoommates(appliedFilters);
       
       if (error) {
         throw error;
       }
       
-      // For now, we'll filter the sample data based on search query
-      let filteredData = SAMPLE_ROOMMATES;
+      // Filter by search query if provided
+      let filteredData = data || [];
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         filteredData = filteredData.filter(roommate => 
@@ -163,10 +80,10 @@ const Dashboard = () => {
     }
   };
 
-  // Call fetchRoommates when filters or search query changes
-  React.useEffect(() => {
+  // Call fetchRoommates when component mounts or filters change
+  useEffect(() => {
     fetchRoommates();
-  }, [searchQuery]);
+  }, [searchQuery, user]);
 
   const handleFilterChange = (newFilters: Partial<FilterState>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
@@ -179,8 +96,8 @@ const Dashboard = () => {
   const resetFilters = () => {
     setFilters({
       gender: [],
-      company: [],
-      officeLocation: [],
+      company: '',
+      officeLocation: '',
       neighborhood: [],
       budgetMin: 500,
       budgetMax: 5000,
@@ -239,9 +156,11 @@ const Dashboard = () => {
           </div>
 
           {/* Active Filters */}
-          {Object.values(filters).some(filter => 
-            Array.isArray(filter) ? filter.length > 0 : filter !== null
-          ) && (
+          {(filters.gender.length > 0 || 
+            filters.company || 
+            filters.neighborhood.length > 0 || 
+            filters.lifestyleTags.length > 0 || 
+            filters.hasCar !== null) && (
             <div className="mb-6 flex flex-wrap gap-2 items-center">
               <span className="text-sm font-medium text-gray-700">Active filters:</span>
               {filters.gender.length > 0 && (
@@ -249,9 +168,9 @@ const Dashboard = () => {
                   Gender: {filters.gender.join(', ')} ×
                 </Button>
               )}
-              {filters.company.length > 0 && (
-                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleFilterChange({ company: [] })}>
-                  Company: {filters.company.join(', ')} ×
+              {filters.company && (
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleFilterChange({ company: '' })}>
+                  Company: {filters.company} ×
                 </Button>
               )}
               {filters.neighborhood.length > 0 && (

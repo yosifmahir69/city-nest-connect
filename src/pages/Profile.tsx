@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,45 +19,64 @@ import {
   User as UserIcon,
   X
 } from 'lucide-react';
-import { updateUserProfile, uploadProfileImage } from '@/lib/supabase';
+import { getUserProfile, updateUserProfile, uploadProfileImage } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 import CreateProfile from './CreateProfile';
-
-const SAMPLE_USER = {
-  id: 'current-user',
-  email: 'you@example.com',
-  fullName: 'Sam Taylor',
-  profileImage: 'https://randomuser.me/api/portraits/men/32.jpg',
-  jobType: 'internship',
-  company: 'Amazon',
-  officeLocation: 'Amazon – NYC 7 W 34th St',
-  startDate: '2025-06-01',
-  endDate: '2025-08-31',
-  gender: 'male',
-  preferredRoommateGenders: ['male', 'female'],
-  hasCar: true,
-  preferredNeighborhoods: ['Chelsea', 'West Village', 'SoHo'],
-  budgetMin: 1200,
-  budgetMax: 2400,
-  lifestyleTags: ['Gym enthusiast', 'Early bird', 'Tech', 'Clean', 'Social'],
-  firstTimeInCity: true,
-  additionalPreferences: ['Private bathroom', 'In-unit laundry', 'Near subway'],
-  createdAt: '2025-03-15',
-  updatedAt: '2025-03-15'
-};
+import { User } from '@/types';
 
 const Profile = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [profileData, setProfileData] = useState(SAMPLE_USER);
+  const navigate = useNavigate();
+  const [profileData, setProfileData] = useState<User | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Fetch the user's profile
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) {
+        navigate('/');
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const { data, error } = await getUserProfile(user.id);
+        
+        if (error) {
+          throw error;
+        }
+        
+        if (data) {
+          setProfileData(data);
+        }
+      } catch (error: any) {
+        console.error('Error fetching profile:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load profile data. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [user, toast, navigate]);
+
+  // Redirect to create profile if no profile exists
+  if (!isLoading && !profileData && user) {
+    return <CreateProfile />;
+  }
   
   const handleProfileUpdate = async () => {
-    if (!user) return;
+    if (!user || !profileData) return;
     
     try {
-      setIsLoading(true);
+      setIsSaving(true);
       
       const { error } = await updateUserProfile(user.id, profileData);
       
@@ -77,16 +98,16 @@ const Profile = () => {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
   const handleProfileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
+    if (!file || !user || !profileData) return;
     
     try {
-      setIsLoading(true);
+      setIsSaving(true);
       
       const { data, error } = await uploadProfileImage(user.id, file);
       
@@ -94,10 +115,10 @@ const Profile = () => {
         throw error;
       }
       
-      setProfileData(prev => ({
+      setProfileData(prev => prev ? {
         ...prev,
         profileImage: data?.url || prev.profileImage
-      }));
+      } : null);
       
       toast({
         title: "Profile Image Updated",
@@ -111,17 +132,40 @@ const Profile = () => {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSaving(false);
     }
   };
 
+  // Handle field changes in edit mode
+  const handleChange = (field: keyof User, value: any) => {
+    if (!profileData) return;
+    
+    setProfileData(prev => {
+      if (!prev) return prev;
+      return { ...prev, [field]: value };
+    });
+  };
+
   const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex justify-center items-center">
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-roommate-blue" />
+          <p className="mt-2 text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!profileData) {
-    return <CreateProfile />;
+    return null;
   }
 
   return (
@@ -136,7 +180,7 @@ const Profile = () => {
                     variant="outline" 
                     size="sm" 
                     onClick={() => setIsEditMode(false)}
-                    disabled={isLoading}
+                    disabled={isSaving}
                   >
                     <X className="h-4 w-4 mr-1" />
                     Cancel
@@ -144,9 +188,9 @@ const Profile = () => {
                   <Button 
                     size="sm" 
                     onClick={handleProfileUpdate}
-                    disabled={isLoading}
+                    disabled={isSaving}
                   >
-                    {isLoading ? (
+                    {isSaving ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                         Saving...
@@ -230,19 +274,52 @@ const Profile = () => {
                       <div className="mt-2 space-y-3">
                         <div>
                           <p className="text-sm font-medium text-gray-500">Full Name</p>
-                          <p>{profileData.fullName}</p>
+                          {isEditMode ? (
+                            <input 
+                              type="text"
+                              className="border border-gray-300 rounded p-2 w-full"
+                              value={profileData.fullName}
+                              onChange={(e) => handleChange('fullName', e.target.value)}
+                            />
+                          ) : (
+                            <p>{profileData.fullName}</p>
+                          )}
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-500">Email</p>
-                          <p>{profileData.email}</p>
+                          <p>{user?.email || profileData.email}</p>
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-500">Gender</p>
-                          <p className="capitalize">{profileData.gender}</p>
+                          {isEditMode ? (
+                            <select
+                              className="border border-gray-300 rounded p-2 w-full"
+                              value={profileData.gender}
+                              onChange={(e) => handleChange('gender', e.target.value)}
+                            >
+                              <option value="male">Male</option>
+                              <option value="female">Female</option>
+                              <option value="nonbinary">Non-binary</option>
+                              <option value="other">Other</option>
+                            </select>
+                          ) : (
+                            <p className="capitalize">{profileData.gender}</p>
+                          )}
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-500">First Time In City</p>
-                          <p>{profileData.firstTimeInCity ? 'Yes' : 'No'}</p>
+                          {isEditMode ? (
+                            <select
+                              className="border border-gray-300 rounded p-2 w-full"
+                              value={profileData.firstTimeInCity ? 'true' : 'false'}
+                              onChange={(e) => handleChange('firstTimeInCity', e.target.value === 'true')}
+                            >
+                              <option value="true">Yes</option>
+                              <option value="false">No</option>
+                            </select>
+                          ) : (
+                            <p>{profileData.firstTimeInCity ? 'Yes' : 'No'}</p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -255,15 +332,44 @@ const Profile = () => {
                       <div className="mt-2 space-y-3">
                         <div>
                           <p className="text-sm font-medium text-gray-500">Company</p>
-                          <p>{profileData.company}</p>
+                          {isEditMode ? (
+                            <input 
+                              type="text"
+                              className="border border-gray-300 rounded p-2 w-full"
+                              value={profileData.company}
+                              onChange={(e) => handleChange('company', e.target.value)}
+                            />
+                          ) : (
+                            <p>{profileData.company}</p>
+                          )}
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-500">Office Location</p>
-                          <p>{profileData.officeLocation}</p>
+                          {isEditMode ? (
+                            <input 
+                              type="text"
+                              className="border border-gray-300 rounded p-2 w-full"
+                              value={profileData.officeLocation}
+                              onChange={(e) => handleChange('officeLocation', e.target.value)}
+                            />
+                          ) : (
+                            <p>{profileData.officeLocation}</p>
+                          )}
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-500">Job Type</p>
-                          <p className="capitalize">{profileData.jobType}</p>
+                          {isEditMode ? (
+                            <select
+                              className="border border-gray-300 rounded p-2 w-full"
+                              value={profileData.jobType}
+                              onChange={(e) => handleChange('jobType', e.target.value)}
+                            >
+                              <option value="internship">Internship</option>
+                              <option value="fulltime">Full-time</option>
+                            </select>
+                          ) : (
+                            <p className="capitalize">{profileData.jobType}</p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -278,14 +384,30 @@ const Profile = () => {
                       <div className="mt-2 space-y-3">
                         <div>
                           <p className="text-sm font-medium text-gray-500">Start Date</p>
-                          <p>{formatDate(profileData.startDate)}</p>
+                          {isEditMode ? (
+                            <input 
+                              type="date"
+                              className="border border-gray-300 rounded p-2 w-full"
+                              value={profileData.startDate ? new Date(profileData.startDate).toISOString().split('T')[0] : ''}
+                              onChange={(e) => handleChange('startDate', e.target.value)}
+                            />
+                          ) : (
+                            <p>{formatDate(profileData.startDate)}</p>
+                          )}
                         </div>
-                        {profileData.endDate && (
-                          <div>
-                            <p className="text-sm font-medium text-gray-500">End Date</p>
-                            <p>{formatDate(profileData.endDate)}</p>
-                          </div>
-                        )}
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">End Date</p>
+                          {isEditMode ? (
+                            <input 
+                              type="date"
+                              className="border border-gray-300 rounded p-2 w-full"
+                              value={profileData.endDate ? new Date(profileData.endDate).toISOString().split('T')[0] : ''}
+                              onChange={(e) => handleChange('endDate', e.target.value)}
+                            />
+                          ) : (
+                            profileData.endDate ? <p>{formatDate(profileData.endDate)}</p> : <p>N/A</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                     
@@ -296,7 +418,26 @@ const Profile = () => {
                       </h3>
                       <div className="mt-2">
                         <p className="text-sm font-medium text-gray-500">Monthly Rent Range</p>
-                        <p>${profileData.budgetMin} - ${profileData.budgetMax}</p>
+                        {isEditMode ? (
+                          <div className="flex gap-2 items-center">
+                            <span>$</span>
+                            <input 
+                              type="number"
+                              className="border border-gray-300 rounded p-2 w-full"
+                              value={profileData.budgetMin}
+                              onChange={(e) => handleChange('budgetMin', parseInt(e.target.value))}
+                            />
+                            <span>-</span>
+                            <input 
+                              type="number"
+                              className="border border-gray-300 rounded p-2 w-full"
+                              value={profileData.budgetMax}
+                              onChange={(e) => handleChange('budgetMax', parseInt(e.target.value))}
+                            />
+                          </div>
+                        ) : (
+                          <p>${profileData.budgetMin} - ${profileData.budgetMax}</p>
+                        )}
                       </div>
                     </div>
                     
@@ -307,7 +448,18 @@ const Profile = () => {
                       </h3>
                       <div className="mt-2">
                         <p className="text-sm font-medium text-gray-500">Has Car</p>
-                        <p>{profileData.hasCar ? 'Yes' : 'No'}</p>
+                        {isEditMode ? (
+                          <select
+                            className="border border-gray-300 rounded p-2 w-full"
+                            value={profileData.hasCar ? 'true' : 'false'}
+                            onChange={(e) => handleChange('hasCar', e.target.value === 'true')}
+                          >
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                          </select>
+                        ) : (
+                          <p>{profileData.hasCar ? 'Yes' : 'No'}</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -324,13 +476,41 @@ const Profile = () => {
                     <div className="mt-2 space-y-3">
                       <div>
                         <p className="text-sm font-medium text-gray-500">Preferred Roommate Gender(s)</p>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {profileData.preferredRoommateGenders.map((gender) => (
-                            <Badge key={gender} variant="outline" className="capitalize">
-                              {gender === "nonbinary" ? "Non-binary" : gender}
-                            </Badge>
-                          ))}
-                        </div>
+                        {isEditMode ? (
+                          <div className="space-y-2 mt-2">
+                            {['male', 'female', 'nonbinary', 'other'].map((gender) => (
+                              <div key={gender} className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  id={`gender-${gender}`}
+                                  checked={(profileData.preferredRoommateGenders || []).includes(gender)}
+                                  onChange={(e) => {
+                                    const currentGenders = [...(profileData.preferredRoommateGenders || [])];
+                                    if (e.target.checked) {
+                                      currentGenders.push(gender);
+                                    } else {
+                                      const index = currentGenders.indexOf(gender);
+                                      if (index !== -1) currentGenders.splice(index, 1);
+                                    }
+                                    handleChange('preferredRoommateGenders', currentGenders);
+                                  }}
+                                  className="mr-2"
+                                />
+                                <label htmlFor={`gender-${gender}`} className="capitalize">
+                                  {gender === "nonbinary" ? "Non-binary" : gender}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {(profileData.preferredRoommateGenders || []).map((gender) => (
+                              <Badge key={gender} variant="outline" className="capitalize">
+                                {gender === "nonbinary" ? "Non-binary" : gender}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -342,39 +522,84 @@ const Profile = () => {
                     </h3>
                     <div className="mt-2">
                       <p className="text-sm font-medium text-gray-500">Preferred Neighborhoods</p>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {profileData.preferredNeighborhoods.map((neighborhood) => (
-                          <Badge key={neighborhood} variant="outline">
-                            {neighborhood}
-                          </Badge>
-                        ))}
-                      </div>
+                      {isEditMode ? (
+                        <textarea
+                          className="border border-gray-300 rounded p-2 w-full mt-2"
+                          value={(profileData.preferredNeighborhoods || []).join(', ')}
+                          onChange={(e) => {
+                            const neighborhoods = e.target.value
+                              .split(',')
+                              .map(n => n.trim())
+                              .filter(n => n !== '');
+                            handleChange('preferredNeighborhoods', neighborhoods);
+                          }}
+                          placeholder="Enter neighborhoods separated by commas"
+                        />
+                      ) : (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {(profileData.preferredNeighborhoods || []).map((neighborhood) => (
+                            <Badge key={neighborhood} variant="outline">
+                              {neighborhood}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                   
                   <div>
                     <h3 className="text-lg font-medium">Lifestyle & Interests</h3>
                     <div className="mt-2">
-                      <div className="flex flex-wrap gap-1">
-                        {profileData.lifestyleTags.map((tag) => (
-                          <Badge key={tag} variant="secondary" className="bg-roommate-paleBlue text-roommate-blue">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
+                      {isEditMode ? (
+                        <textarea
+                          className="border border-gray-300 rounded p-2 w-full mt-2"
+                          value={(profileData.lifestyleTags || []).join(', ')}
+                          onChange={(e) => {
+                            const tags = e.target.value
+                              .split(',')
+                              .map(tag => tag.trim())
+                              .filter(tag => tag !== '');
+                            handleChange('lifestyleTags', tags);
+                          }}
+                          placeholder="Enter lifestyle tags separated by commas"
+                        />
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {(profileData.lifestyleTags || []).map((tag) => (
+                            <Badge key={tag} variant="secondary" className="bg-roommate-paleBlue text-roommate-blue">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                   
                   <div>
                     <h3 className="text-lg font-medium">Additional Preferences</h3>
                     <div className="mt-2">
-                      <div className="flex flex-wrap gap-1">
-                        {profileData.additionalPreferences.map((preference) => (
-                          <Badge key={preference} variant="outline">
-                            {preference}
-                          </Badge>
-                        ))}
-                      </div>
+                      {isEditMode ? (
+                        <textarea
+                          className="border border-gray-300 rounded p-2 w-full mt-2"
+                          value={(profileData.additionalPreferences || []).join(', ')}
+                          onChange={(e) => {
+                            const preferences = e.target.value
+                              .split(',')
+                              .map(pref => pref.trim())
+                              .filter(pref => pref !== '');
+                            handleChange('additionalPreferences', preferences);
+                          }}
+                          placeholder="Enter additional preferences separated by commas"
+                        />
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {(profileData.additionalPreferences || []).map((preference) => (
+                            <Badge key={preference} variant="outline">
+                              {preference}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

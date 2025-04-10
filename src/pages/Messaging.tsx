@@ -1,162 +1,33 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Search, Send } from 'lucide-react';
+import { getConversations, getMessages, markMessagesAsRead, sendMessage } from '@/lib/supabase';
 import { Conversation, Message, User } from '@/types';
-import { getConversations, getMessages, sendMessage } from '@/lib/supabase';
-import { format } from 'date-fns';
-import { MessageSquare, Send, User as UserIcon } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-
-// Sample data until Supabase integration
-const SAMPLE_CONVERSATIONS: Conversation[] = [
-  {
-    id: '1',
-    participantIds: ['current-user', '1'],
-    lastMessageId: 'm4',
-    lastMessageContent: 'Are you still looking for a roommate?',
-    lastMessageTime: '2025-04-09T14:30:00Z',
-    unreadCount: 1,
-    otherUser: {
-      id: '1',
-      email: 'alex@example.com',
-      fullName: 'Alex Johnson',
-      profileImage: 'https://randomuser.me/api/portraits/men/1.jpg',
-      jobType: 'internship',
-      company: 'Google',
-      officeLocation: 'Google – NYC 111 8th Ave',
-      startDate: '2025-06-01',
-      endDate: '2025-08-31',
-      gender: 'male',
-      preferredRoommateGenders: ['male', 'female'],
-      hasCar: true,
-      preferredNeighborhoods: ['Chelsea', 'West Village'],
-      budgetMin: 1200,
-      budgetMax: 2000,
-      lifestyleTags: ['Gym enthusiast', 'Early bird', 'Tech', 'Clean'],
-      firstTimeInCity: true,
-      additionalPreferences: ['Private bathroom', 'In-unit laundry'],
-      createdAt: '2025-04-01',
-      updatedAt: '2025-04-01'
-    }
-  },
-  {
-    id: '2',
-    participantIds: ['current-user', '2'],
-    lastMessageId: 'm8',
-    lastMessageContent: 'I found a nice apartment in Midtown we could check out.',
-    lastMessageTime: '2025-04-08T18:15:00Z',
-    unreadCount: 0,
-    otherUser: {
-      id: '2',
-      email: 'maya@example.com',
-      fullName: 'Maya Rodriguez',
-      profileImage: 'https://randomuser.me/api/portraits/women/2.jpg',
-      jobType: 'fulltime',
-      company: 'Amazon',
-      officeLocation: 'Amazon – NYC 7 W 34th St',
-      startDate: '2025-07-15',
-      gender: 'female',
-      preferredRoommateGenders: ['female'],
-      hasCar: false,
-      preferredNeighborhoods: ['Midtown', 'Upper East Side'],
-      budgetMin: 1500,
-      budgetMax: 2500,
-      lifestyleTags: ['Social', 'Music', 'Travel', 'Non-smoker'],
-      firstTimeInCity: false,
-      additionalPreferences: ['Near subway', 'Pet-friendly building'],
-      createdAt: '2025-04-02',
-      updatedAt: '2025-04-02'
-    }
-  }
-];
-
-const SAMPLE_MESSAGES: Record<string, Message[]> = {
-  '1': [
-    {
-      id: 'm1',
-      senderId: 'current-user',
-      receiverId: '1',
-      content: 'Hi Alex, I noticed we both work at tech companies and are looking for places in the same neighborhoods.',
-      read: true,
-      createdAt: '2025-04-09T10:15:00Z'
-    },
-    {
-      id: 'm2',
-      senderId: '1',
-      receiverId: 'current-user',
-      content: 'Hey! Yeah, I saw that too. I think we might be a good match as roommates.',
-      read: true,
-      createdAt: '2025-04-09T10:20:00Z'
-    },
-    {
-      id: 'm3',
-      senderId: 'current-user',
-      receiverId: '1',
-      content: 'What kind of place are you looking for? I was thinking a 2-bedroom in Chelsea.',
-      read: true,
-      createdAt: '2025-04-09T10:25:00Z'
-    },
-    {
-      id: 'm4',
-      senderId: '1',
-      receiverId: 'current-user',
-      content: 'Are you still looking for a roommate?',
-      read: false,
-      createdAt: '2025-04-09T14:30:00Z'
-    }
-  ],
-  '2': [
-    {
-      id: 'm5',
-      senderId: 'current-user',
-      receiverId: '2',
-      content: "Hi Maya, I see you're looking for a place in Midtown. That's where I'm looking too!",
-      read: true,
-      createdAt: '2025-04-08T14:30:00Z'
-    },
-    {
-      id: 'm6',
-      senderId: '2',
-      receiverId: 'current-user',
-      content: "Hi there! Yes, I'd love to find a place close to work. Have you found any good listings?",
-      read: true,
-      createdAt: '2025-04-08T15:45:00Z'
-    },
-    {
-      id: 'm7',
-      senderId: 'current-user',
-      receiverId: '2',
-      content: "I've been looking at a few buildings on StreetEasy. Would you be interested in trying to see some places together?",
-      read: true,
-      createdAt: '2025-04-08T16:30:00Z'
-    },
-    {
-      id: 'm8',
-      senderId: '2',
-      receiverId: 'current-user',
-      content: 'I found a nice apartment in Midtown we could check out.',
-      read: true,
-      createdAt: '2025-04-08T18:15:00Z'
-    }
-  ]
-};
+import { format, isToday, isYesterday } from 'date-fns';
 
 const Messaging = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const [conversations, setConversations] = useState<Conversation[]>(SAMPLE_CONVERSATIONS);
-  const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
+  
+  // Fetch conversations
   useEffect(() => {
-    // Fetch conversations
     const fetchConversations = async () => {
       if (!user) return;
       
@@ -168,15 +39,13 @@ const Messaging = () => {
           throw error;
         }
         
-        // For now, use sample data
-        setConversations(SAMPLE_CONVERSATIONS);
+        setConversations(data);
         
-        // Set first conversation as active if there isn't one
-        if (SAMPLE_CONVERSATIONS.length > 0 && !activeConversation) {
-          setActiveConversation(SAMPLE_CONVERSATIONS[0]);
-          fetchMessages(SAMPLE_CONVERSATIONS[0].id);
+        // If there's a conversation, select the first one by default
+        if (data.length > 0 && !selectedConversation) {
+          setSelectedConversation(data[0]);
         }
-      } catch (error: any) {
+      } catch (error) {
         console.error('Error fetching conversations:', error);
         toast({
           title: "Error",
@@ -187,284 +56,425 @@ const Messaging = () => {
         setIsLoading(false);
       }
     };
-
+    
     fetchConversations();
-  }, [user]);
-
-  const fetchMessages = async (conversationId: string) => {
-    if (!user) return;
+    
+    // Poll for new messages every 30 seconds
+    const intervalId = setInterval(fetchConversations, 30000);
+    
+    return () => clearInterval(intervalId);
+  }, [user, toast]);
+  
+  // Fetch messages for selected conversation
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!selectedConversation) return;
+      
+      try {
+        const { data, error } = await getMessages(selectedConversation.id);
+        
+        if (error) {
+          throw error;
+        }
+        
+        setMessages(data);
+        
+        // Mark messages as read
+        if (user) {
+          await markMessagesAsRead(selectedConversation.id, user.id);
+        }
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+      }
+    };
+    
+    fetchMessages();
+    
+    // Poll for new messages every 5 seconds when a conversation is selected
+    const intervalId = setInterval(fetchMessages, 5000);
+    
+    return () => clearInterval(intervalId);
+  }, [selectedConversation, user]);
+  
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+  
+  if (!user) {
+    navigate('/');
+    return null;
+  }
+  
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newMessage.trim() || !selectedConversation || !user) return;
     
     try {
-      setIsLoading(true);
-      const { data, error } = await getMessages(conversationId);
+      setIsSending(true);
+      
+      const { error } = await sendMessage(
+        user.id,
+        selectedConversation.otherUser.id,
+        newMessage.trim()
+      );
       
       if (error) {
         throw error;
       }
       
-      // For now, use sample data
-      setMessages(SAMPLE_MESSAGES[conversationId] || []);
-    } catch (error: any) {
-      console.error('Error fetching messages:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load messages. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-      
-      // Scroll to bottom
-      scrollToBottom();
-    }
-  };
-
-  const scrollToBottom = () => {
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-  };
-
-  const handleSendMessage = async () => {
-    if (!user || !activeConversation || !newMessage.trim()) return;
-    
-    try {
-      const tempId = `temp-${Date.now()}`;
-      const tempMessage: Message = {
-        id: tempId,
-        senderId: 'current-user',
-        receiverId: activeConversation.otherUser.id,
-        content: newMessage,
-        read: false,
-        createdAt: new Date().toISOString()
-      };
-      
-      // Optimistically update UI
-      setMessages(prev => [...prev, tempMessage]);
+      // Clear input field
       setNewMessage('');
       
-      // Scroll to bottom
-      scrollToBottom();
-      
-      const { data, error } = await sendMessage(
-        'current-user',
-        activeConversation.otherUser.id,
-        newMessage
-      );
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Update conversations with latest message
-      setConversations(prev => 
-        prev.map(conv => 
-          conv.id === activeConversation.id 
-            ? {
-                ...conv,
-                lastMessageId: tempId,
-                lastMessageContent: newMessage,
-                lastMessageTime: new Date().toISOString()
-              }
-            : conv
-        )
-      );
-    } catch (error: any) {
+      // Refresh messages
+      const { data } = await getMessages(selectedConversation.id);
+      setMessages(data);
+    } catch (error) {
       console.error('Error sending message:', error);
       toast({
         title: "Error",
         description: "Failed to send message. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSending(false);
     }
   };
-
-  const handleConversationClick = (conversation: Conversation) => {
-    setActiveConversation(conversation);
-    fetchMessages(conversation.id);
+  
+  const filteredConversations = conversations.filter(conv => 
+    conv.otherUser.fullName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const formatMessageDate = (dateString: string) => {
+    const date = new Date(dateString);
     
-    // Mark conversation as read when selected
-    setConversations(prev => 
-      prev.map(conv => 
-        conv.id === conversation.id 
-          ? { ...conv, unreadCount: 0 }
-          : conv
-      )
-    );
-  };
-
-  const formatTime = (timestamp: string) => {
-    try {
-      return format(new Date(timestamp), 'h:mm a');
-    } catch (error) {
-      return '';
+    if (isToday(date)) {
+      return format(date, 'h:mm a');
+    } else if (isYesterday(date)) {
+      return 'Yesterday';
+    } else {
+      return format(date, 'MMM d');
     }
   };
-
-  const formatDate = (timestamp: string) => {
-    try {
-      return format(new Date(timestamp), 'MMM d, yyyy');
-    } catch (error) {
-      return '';
+  
+  const groupMessagesByDate = (messages: Message[]) => {
+    const groups: { [key: string]: Message[] } = {};
+    
+    messages.forEach((message) => {
+      const date = new Date(message.createdAt).toLocaleDateString();
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(message);
+    });
+    
+    return Object.entries(groups).map(([date, messages]) => ({
+      date,
+      messages,
+    }));
+  };
+  
+  const dateDisplay = (dateString: string) => {
+    const date = new Date(dateString);
+    
+    if (isToday(date)) {
+      return 'Today';
+    } else if (isYesterday(date)) {
+      return 'Yesterday';
+    } else {
+      return format(date, 'MMMM d, yyyy');
     }
   };
-
+  
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Inbox/Conversation List */}
-      <div className="w-80 border-r border-gray-200 bg-white hidden md:block overflow-hidden flex-shrink-0">
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Conversations List */}
+      <div className="w-full sm:w-80 md:w-96 border-r border-gray-200 bg-white">
         <div className="p-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium">Messages</h2>
+          <h1 className="text-xl font-bold mb-4">Messages</h1>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+            <Input
+              placeholder="Search conversations..."
+              className="pl-8"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
         </div>
-        <ScrollArea className="h-[calc(100vh-64px)] p-2">
-          {conversations.length > 0 ? (
-            conversations.map((conversation) => (
+        
+        {isLoading ? (
+          <div className="flex justify-center items-center h-48">
+            <Loader2 className="h-8 w-8 animate-spin text-roommate-blue" />
+          </div>
+        ) : filteredConversations.length > 0 ? (
+          <div className="overflow-y-auto max-h-[calc(100vh-10rem)]">
+            {filteredConversations.map((conversation) => (
               <div
                 key={conversation.id}
-                className={`p-3 mb-2 rounded-lg cursor-pointer transition-colors ${
-                  activeConversation?.id === conversation.id
-                    ? 'bg-roommate-paleBlue'
-                    : 'hover:bg-gray-100'
+                className={`p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors ${
+                  selectedConversation?.id === conversation.id ? 'bg-roommate-paleBlue' : ''
                 }`}
-                onClick={() => handleConversationClick(conversation)}
+                onClick={() => setSelectedConversation(conversation)}
               >
-                <div className="flex items-start gap-3">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={conversation.otherUser.profileImage} alt={conversation.otherUser.fullName} />
-                    <AvatarFallback>
-                      {conversation.otherUser.fullName.charAt(0)}
-                    </AvatarFallback>
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarImage 
+                      src={conversation.otherUser.profileImage} 
+                      alt={conversation.otherUser.fullName} 
+                    />
+                    <AvatarFallback>{conversation.otherUser.fullName.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center">
+                    <div className="flex items-center justify-between">
                       <h3 className="font-medium truncate">{conversation.otherUser.fullName}</h3>
                       <span className="text-xs text-gray-500">
-                        {formatDate(conversation.lastMessageTime)}
+                        {formatMessageDate(conversation.lastMessageTime)}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600 truncate">
-                      {conversation.lastMessageContent}
-                    </p>
-                    <div className="flex justify-between items-center mt-1">
-                      <span className="text-xs text-gray-500">
-                        {conversation.otherUser.company}
-                      </span>
+                    <div className="flex items-center justify-between mt-1">
+                      <p className="text-sm text-gray-600 truncate">{conversation.lastMessageContent}</p>
                       {conversation.unreadCount > 0 && (
-                        <span className="bg-roommate-blue text-white text-xs rounded-full px-2 py-0.5">
+                        <Badge variant="destructive" className="h-5 w-5 rounded-full p-0 flex items-center justify-center">
                           {conversation.unreadCount}
-                        </span>
+                        </Badge>
                       )}
+                    </div>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Badge variant="outline" className="text-xs">
+                        {conversation.otherUser.company}
+                      </Badge>
+                      <Badge variant={conversation.otherUser.jobType === 'internship' ? 'outline' : 'secondary'} className="text-xs">
+                        {conversation.otherUser.jobType === 'internship' ? 'Intern' : 'Full-time'}
+                      </Badge>
                     </div>
                   </div>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="p-4 text-center text-gray-500">
-              <MessageSquare className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-              <p>No messages yet</p>
-              <p className="text-sm">
-                Go to the dashboard to find roommates and start chatting
-              </p>
-            </div>
-          )}
-        </ScrollArea>
-      </div>
-      
-      {/* Message Thread */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {activeConversation ? (
-          <>
-            {/* Message Header */}
-            <div className="p-4 border-b border-gray-200 bg-white flex items-center gap-3">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={activeConversation.otherUser.profileImage} alt={activeConversation.otherUser.fullName} />
-                <AvatarFallback>
-                  {activeConversation.otherUser.fullName.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h2 className="font-medium">{activeConversation.otherUser.fullName}</h2>
-                <p className="text-sm text-gray-600">
-                  {activeConversation.otherUser.company} • {activeConversation.otherUser.jobType === 'internship' ? 'Intern' : 'Full-time'}
-                </p>
-              </div>
-            </div>
-            
-            {/* Messages */}
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
-                {messages.map((message, index) => {
-                  const isSender = message.senderId === 'current-user';
-                  const showDate = index === 0 || 
-                    formatDate(messages[index - 1].createdAt) !== formatDate(message.createdAt);
-                  
-                  return (
-                    <React.Fragment key={message.id}>
-                      {showDate && (
-                        <div className="flex justify-center my-4">
-                          <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">
-                            {formatDate(message.createdAt)}
-                          </span>
-                        </div>
-                      )}
-                      
-                      <div className={`flex ${isSender ? 'justify-end' : 'justify-start'}`}>
-                        <div 
-                          className={`max-w-[75%] px-4 py-2 rounded-lg ${
-                            isSender 
-                              ? 'bg-roommate-blue text-white rounded-br-none' 
-                              : 'bg-gray-100 text-gray-800 rounded-bl-none'
-                          }`}
-                        >
-                          <p>{message.content}</p>
-                          <span 
-                            className={`text-xs ${isSender ? 'text-blue-100' : 'text-gray-500'} block text-right mt-1`}
-                          >
-                            {formatTime(message.createdAt)}
-                          </span>
-                        </div>
-                      </div>
-                    </React.Fragment>
-                  );
-                })}
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
-            
-            {/* Message Input */}
-            <div className="p-4 border-t border-gray-200 bg-white">
-              <div className="flex gap-2">
-                <Input 
-                  placeholder="Type your message..." 
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                />
-                <Button 
-                  onClick={handleSendMessage}
-                  disabled={!newMessage.trim()}
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </>
+            ))}
+          </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center p-6">
-            <MessageSquare className="h-16 w-16 text-gray-300 mb-4" />
-            <h2 className="text-xl font-medium text-gray-800 mb-2">No Conversation Selected</h2>
-            <p className="text-gray-600 max-w-md">
-              Select a conversation from the list on the left to view your messages, or start a new conversation from the dashboard.
+          <div className="p-8 text-center">
+            <p className="text-gray-500">No conversations found</p>
+            <p className="text-sm text-gray-400 mt-1">
+              Start messaging potential roommates from the dashboard
             </p>
+            <Button className="mt-4" onClick={() => navigate('/dashboard')}>
+              Find Roommates
+            </Button>
           </div>
         )}
       </div>
+      
+      {/* Chat Area */}
+      <div className="hidden sm:flex flex-col flex-1 bg-gray-50">
+        {selectedConversation ? (
+          <>
+            {/* Chat Header */}
+            <div className="p-4 border-b border-gray-200 bg-white shadow-sm flex items-center gap-3">
+              <Avatar>
+                <AvatarImage 
+                  src={selectedConversation.otherUser.profileImage} 
+                  alt={selectedConversation.otherUser.fullName} 
+                />
+                <AvatarFallback>{selectedConversation.otherUser.fullName.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div>
+                <h2 className="font-medium">{selectedConversation.otherUser.fullName}</h2>
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <span>{selectedConversation.otherUser.company}</span>
+                  <span>•</span>
+                  <span className="capitalize">{selectedConversation.otherUser.jobType}</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+              {groupMessagesByDate(messages).map((group, groupIndex) => (
+                <div key={groupIndex} className="space-y-4">
+                  <div className="flex justify-center">
+                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                      {dateDisplay(group.date)}
+                    </span>
+                  </div>
+                  
+                  {group.messages.map((message) => {
+                    const isCurrentUser = message.senderId === user?.id;
+                    
+                    return (
+                      <div 
+                        key={message.id} 
+                        className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                      >
+                        {!isCurrentUser && (
+                          <Avatar className="h-8 w-8 mr-2 flex-shrink-0">
+                            <AvatarImage 
+                              src={selectedConversation.otherUser.profileImage} 
+                              alt={selectedConversation.otherUser.fullName} 
+                            />
+                            <AvatarFallback>{selectedConversation.otherUser.fullName.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                        )}
+                        
+                        <div 
+                          className={`max-w-[70%] px-4 py-2 rounded-lg ${
+                            isCurrentUser 
+                              ? 'bg-roommate-blue text-white rounded-tr-none' 
+                              : 'bg-white text-gray-800 rounded-tl-none'
+                          }`}
+                        >
+                          <p className="whitespace-pre-wrap">{message.content}</p>
+                          <span className={`text-xs ${isCurrentUser ? 'text-blue-100' : 'text-gray-500'} block mt-1`}>
+                            {format(new Date(message.createdAt), 'h:mm a')}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+            
+            {/* Message Input */}
+            <div className="p-4 border-t border-gray-200 bg-white">
+              <form onSubmit={handleSendMessage} className="flex gap-2">
+                <Input
+                  placeholder="Type your message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  className="flex-1"
+                />
+                <Button type="submit" disabled={isSending || !newMessage.trim()}>
+                  {isSending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-1" />
+                      Send
+                    </>
+                  )}
+                </Button>
+              </form>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center p-8">
+            <div className="text-center">
+              <h2 className="text-xl font-medium text-gray-800 mb-2">Select a conversation</h2>
+              <p className="text-gray-500 max-w-md">
+                Choose a conversation from the sidebar or start messaging potential roommates from the dashboard.
+              </p>
+              {conversations.length === 0 && (
+                <Button className="mt-4" onClick={() => navigate('/dashboard')}>
+                  Find Roommates
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {/* Mobile Selected Conversation View */}
+      {selectedConversation && (
+        <div className="fixed inset-0 bg-white z-50 sm:hidden flex flex-col">
+          <div className="p-4 border-b border-gray-200 bg-white shadow-sm flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="p-1"
+              onClick={() => setSelectedConversation(null)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </Button>
+            
+            <Avatar>
+              <AvatarImage 
+                src={selectedConversation.otherUser.profileImage} 
+                alt={selectedConversation.otherUser.fullName} 
+              />
+              <AvatarFallback>{selectedConversation.otherUser.fullName.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <h2 className="font-medium">{selectedConversation.otherUser.fullName}</h2>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <span>{selectedConversation.otherUser.company}</span>
+                <span>•</span>
+                <span className="capitalize">{selectedConversation.otherUser.jobType}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            {groupMessagesByDate(messages).map((group, groupIndex) => (
+              <div key={groupIndex} className="space-y-4">
+                <div className="flex justify-center">
+                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                    {dateDisplay(group.date)}
+                  </span>
+                </div>
+                
+                {group.messages.map((message) => {
+                  const isCurrentUser = message.senderId === user?.id;
+                  
+                  return (
+                    <div 
+                      key={message.id} 
+                      className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                    >
+                      {!isCurrentUser && (
+                        <Avatar className="h-8 w-8 mr-2 flex-shrink-0">
+                          <AvatarImage 
+                            src={selectedConversation.otherUser.profileImage} 
+                            alt={selectedConversation.otherUser.fullName} 
+                          />
+                          <AvatarFallback>{selectedConversation.otherUser.fullName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                      )}
+                      
+                      <div 
+                        className={`max-w-[70%] px-4 py-2 rounded-lg ${
+                          isCurrentUser 
+                            ? 'bg-roommate-blue text-white rounded-tr-none' 
+                            : 'bg-white text-gray-800 rounded-tl-none'
+                        }`}
+                      >
+                        <p className="whitespace-pre-wrap">{message.content}</p>
+                        <span className={`text-xs ${isCurrentUser ? 'text-blue-100' : 'text-gray-500'} block mt-1`}>
+                          {format(new Date(message.createdAt), 'h:mm a')}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+          
+          <div className="p-4 border-t border-gray-200 bg-white">
+            <form onSubmit={handleSendMessage} className="flex gap-2">
+              <Input
+                placeholder="Type your message..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                className="flex-1"
+              />
+              <Button type="submit" disabled={isSending || !newMessage.trim()}>
+                {isSending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
