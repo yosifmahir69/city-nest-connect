@@ -9,7 +9,72 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          additional_preferences: string[] | null
+          budget_max: number | null
+          budget_min: number | null
+          company: string | null
+          created_at: string | null
+          end_date: string | null
+          first_time_in_city: boolean | null
+          full_name: string | null
+          gender: string | null
+          has_car: boolean | null
+          id: string
+          job_type: string | null
+          lifestyle_tags: string[] | null
+          office_location: string | null
+          preferred_neighborhoods: string[] | null
+          preferred_roommate_genders: string[] | null
+          profile_image_url: string | null
+          start_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          additional_preferences?: string[] | null
+          budget_max?: number | null
+          budget_min?: number | null
+          company?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          first_time_in_city?: boolean | null
+          full_name?: string | null
+          gender?: string | null
+          has_car?: boolean | null
+          id: string
+          job_type?: string | null
+          lifestyle_tags?: string[] | null
+          office_location?: string | null
+          preferred_neighborhoods?: string[] | null
+          preferred_roommate_genders?: string[] | null
+          profile_image_url?: string | null
+          start_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          additional_preferences?: string[] | null
+          budget_max?: number | null
+          budget_min?: number | null
+          company?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          first_time_in_city?: boolean | null
+          full_name?: string | null
+          gender?: string | null
+          has_car?: boolean | null
+          id?: string
+          job_type?: string | null
+          lifestyle_tags?: string[] | null
+          office_location?: string | null
+          preferred_neighborhoods?: string[] | null
+          preferred_roommate_genders?: string[] | null
+          profile_image_url?: string | null
+          start_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

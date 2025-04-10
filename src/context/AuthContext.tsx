@@ -1,11 +1,14 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { User, Session } from '@supabase/supabase-js';
 import { getCurrentUser, signIn, signOut, signUp } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 
 interface AuthContextType {
-  user: any | null;
+  user: User | null;
+  session: Session | null;
   loading: boolean;
   signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
@@ -15,30 +18,29 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is already authenticated
-    const checkUser = async () => {
-      try {
-        setLoading(true);
-        const { data, error } = await getCurrentUser();
-        if (error) {
-          throw error;
-        }
-        setUser(data);
-      } catch (error) {
-        console.error('Error checking authentication:', error);
-        setUser(null);
-      } finally {
-        setLoading(false);
+    // Set up auth state listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
       }
-    };
+    );
 
-    checkUser();
+    // Then check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleSignUp = async (email: string, password: string) => {
@@ -48,12 +50,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) {
         throw error;
       }
-      toast({
-        title: "Account created!",
-        description: "Please complete your profile.",
-      });
-      setUser(data);
-      navigate('/create-profile');
+      
+      if (data.user) {
+        toast({
+          title: "Account created!",
+          description: "Please complete your profile.",
+        });
+        setUser(data.user);
+        navigate('/create-profile');
+      } else {
+        // Email confirmation might be required
+        toast({
+          title: "Check your email",
+          description: "We've sent you a confirmation link.",
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Error creating account",
@@ -72,7 +83,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) {
         throw error;
       }
-      setUser(data);
+      setUser(data.user);
+      setSession(data.session);
       toast({
         title: "Welcome back!",
         description: "You've successfully signed in.",
@@ -97,6 +109,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw error;
       }
       setUser(null);
+      setSession(null);
       toast({
         title: "Signed out",
         description: "You've been successfully signed out.",
@@ -117,6 +130,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     <AuthContext.Provider
       value={{
         user,
+        session,
         loading,
         signUp: handleSignUp,
         signIn: handleSignIn,
