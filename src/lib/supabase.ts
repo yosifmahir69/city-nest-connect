@@ -1,14 +1,10 @@
-
 import { createClient } from '@supabase/supabase-js';
 
-// This file is a placeholder to illustrate how the Supabase client would be set up
-// In a real application, you would access these environment variables from your deployment
-// After connecting to Supabase through Lovable's integration
-
-// Note: This is not functional without the integration - it's a template for future implementation
+// Using placeholder values that will be valid URL strings
+// These placeholders will be replaced when integrating with a real Supabase project
 export const supabase = createClient(
-  'placeholder-url',
-  'placeholder-anon-key'
+  'https://placeholder-project-id.supabase.co',
+  'placeholder-anon-key-that-is-long-enough-to-be-valid'
 );
 
 // User related functions
