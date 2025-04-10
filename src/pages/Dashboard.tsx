@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -13,8 +12,8 @@ import { useToast } from '@/components/ui/use-toast';
 
 interface FilterState {
   gender: string[];
-  company: string;
-  officeLocation: string;
+  company: string[];
+  officeLocation: string[];
   neighborhood: string[];
   budgetMin: number;
   budgetMax: number;
@@ -40,8 +39,8 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<FilterState>({
     gender: [],
-    company: '',
-    officeLocation: '',
+    company: [],
+    officeLocation: [],
     neighborhood: [],
     budgetMin: 500,
     budgetMax: 5000,
@@ -59,7 +58,7 @@ const Dashboard = () => {
       const appliedFilters = {
         ...filters,
         // Only include company if it has a value
-        ...(filters.company ? { company: filters.company } : {}),
+        ...(filters.company.length > 0 ? { company: filters.company[0] } : {}),
       };
       
       const { data, error } = await getRoommates(appliedFilters);
@@ -105,8 +104,8 @@ const Dashboard = () => {
   const convertToSidebarFilters = (filters: FilterState): SidebarFilterState => {
     return {
       gender: filters.gender,
-      company: filters.company ? [filters.company] : [],
-      officeLocation: filters.officeLocation ? [filters.officeLocation] : [],
+      company: filters.company,
+      officeLocation: filters.officeLocation,
       neighborhood: filters.neighborhood,
       budgetMin: filters.budgetMin,
       budgetMax: filters.budgetMax,
@@ -119,8 +118,6 @@ const Dashboard = () => {
   const handleSidebarFilterChange = (sidebarFilters: Partial<SidebarFilterState>) => {
     const updatedFilters: Partial<FilterState> = {
       ...sidebarFilters,
-      company: sidebarFilters.company?.[0] || '',
-      officeLocation: sidebarFilters.officeLocation?.[0] || '',
     };
     handleFilterChange(updatedFilters);
   };
@@ -132,8 +129,8 @@ const Dashboard = () => {
   const resetFilters = () => {
     setFilters({
       gender: [],
-      company: '',
-      officeLocation: '',
+      company: [],
+      officeLocation: [],
       neighborhood: [],
       budgetMin: 500,
       budgetMax: 5000,
@@ -151,8 +148,8 @@ const Dashboard = () => {
       {/* Desktop Filter Sidebar */}
       <div className="hidden lg:block w-80 border-r border-gray-200 overflow-y-auto">
         <FilterSidebar 
-          filters={filters} 
-          onFilterChange={handleFilterChange}
+          filters={sidebarFilters} 
+          onFilterChange={handleSidebarFilterChange}
           onApplyFilters={applyFilters}
           onResetFilters={resetFilters}
         />
@@ -184,8 +181,8 @@ const Dashboard = () => {
                 </SheetTrigger>
                 <SheetContent side="left" className="w-80 sm:max-w-sm">
                   <FilterSidebar 
-                    filters={filters} 
-                    onFilterChange={handleFilterChange}
+                    filters={sidebarFilters} 
+                    onFilterChange={handleSidebarFilterChange}
                     onApplyFilters={applyFilters}
                     onResetFilters={resetFilters}
                   />
@@ -196,7 +193,7 @@ const Dashboard = () => {
 
           {/* Active Filters */}
           {(filters.gender.length > 0 || 
-            filters.company || 
+            filters.company.length > 0 || 
             filters.neighborhood.length > 0 || 
             filters.lifestyleTags.length > 0 || 
             filters.hasCar !== null) && (
@@ -207,9 +204,9 @@ const Dashboard = () => {
                   Gender: {filters.gender.join(', ')} ×
                 </Button>
               )}
-              {filters.company && (
-                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleFilterChange({ company: '' })}>
-                  Company: {filters.company} ×
+              {filters.company.length > 0 && (
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleFilterChange({ company: [] })}>
+                  Company: {filters.company.join(', ')} ×
                 </Button>
               )}
               {filters.neighborhood.length > 0 && (

@@ -149,7 +149,7 @@ export async function getRoommates(filters: any = {}) {
 
 // For messaging functions
 export async function getConversations(userId: string) {
-  // We'll use a raw query since the TypeScript types for RPC aren't available
+  // We'll use RPC for getting conversations
   const { data: conversationData, error: conversationError } = await supabase.rpc(
     'get_conversations',
     { user_id: userId }
