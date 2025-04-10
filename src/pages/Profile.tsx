@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -20,9 +19,8 @@ import {
 } from 'lucide-react';
 import { updateUserProfile, uploadProfileImage } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
-import { CreateProfile } from './CreateProfile';
+import CreateProfile from './CreateProfile';
 
-// Sample user data until Supabase integration
 const SAMPLE_USER = {
   id: 'current-user',
   email: 'you@example.com',
@@ -53,24 +51,6 @@ const Profile = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  // In a real app, we'd fetch the profile data from Supabase
-  // useEffect(() => {
-  //   const fetchProfileData = async () => {
-  //     if (!user) return;
-  //     
-  //     try {
-  //       setIsLoading(true);
-  //       // Fetch profile data
-  //     } catch (error) {
-  //       console.error('Error fetching profile data:', error);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-  //   
-  //   fetchProfileData();
-  // }, [user]);
-
   const handleProfileUpdate = async () => {
     if (!user) return;
     
@@ -114,7 +94,6 @@ const Profile = () => {
         throw error;
       }
       
-      // Update profile data with new image URL
       setProfileData(prev => ({
         ...prev,
         profileImage: data?.url || prev.profileImage
@@ -136,7 +115,6 @@ const Profile = () => {
     }
   };
 
-  // Format date for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
