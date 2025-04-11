@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -60,8 +59,6 @@ const Dashboard = () => {
       
       const appliedFilters = {
         ...filters,
-        // Only include company if it has a value
-        ...(filters.company.length > 0 ? { company: filters.company } : {}),
       };
       
       const { data, error } = await getRoommates(appliedFilters);
