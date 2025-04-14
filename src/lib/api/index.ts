@@ -14,4 +14,4 @@ export * from './messaging';
 export * from './admin';
 
 // Roommate functions
-export * from './roommates';
+export { getRoommates } from './roommates';

@@ -37,10 +37,12 @@ const Messaging = () => {
           throw error;
         }
         
-        setConversations(data || []);
-        
-        if (data.length > 0 && !selectedConversation) {
-          setSelectedConversation(data[0]);
+        if (data) {
+          setConversations(data as Conversation[]);
+          
+          if (data.length > 0 && !selectedConversation) {
+            setSelectedConversation(data[0] as Conversation);
+          }
         }
       } catch (error) {
         console.error('Error fetching conversations:', error);
@@ -73,7 +75,7 @@ const Messaging = () => {
         }
         
         if (data) {
-          setMessages(data);
+          setMessages(data as Message[]);
           
           if (user) {
             await markMessagesAsRead(selectedConversation.id, user.id);
@@ -125,7 +127,7 @@ const Messaging = () => {
       
       const { data } = await getMessages(selectedConversation.id);
       if (data) {
-        setMessages(data);
+        setMessages(data as Message[]);
       }
     } catch (error) {
       console.error('Error sending message:', error);

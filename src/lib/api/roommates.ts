@@ -1,13 +1,17 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { RoommateFilters, RPCFunctions } from '../db-types';
 
 // Function to get roommates with optional filters
-export async function getRoommates(filters = {}) {
+export async function getRoommates(filters: RoommateFilters = {}) {
   try {
     console.log('Fetching roommates with filters:', filters);
     
     // Call the get_roommates RPC function
-    const { data, error } = await supabase.rpc('get_roommates');
+    const { data, error } = await supabase.rpc<
+      RPCFunctions['get_roommates']['Returns'],
+      RPCFunctions['get_roommates']['Args']
+    >('get_roommates');
     
     if (error) {
       throw error;
@@ -19,21 +23,21 @@ export async function getRoommates(filters = {}) {
     // Filter by gender if specified
     if (filters.gender && filters.gender.length > 0) {
       filteredData = filteredData.filter(roommate => 
-        filters.gender.includes(roommate.gender)
+        filters.gender!.includes(roommate.gender)
       );
     }
     
     // Filter by company if specified
     if (filters.company && filters.company.length > 0) {
       filteredData = filteredData.filter(roommate => 
-        filters.company.includes(roommate.company)
+        filters.company!.includes(roommate.company)
       );
     }
     
     // Filter by officeLocation if specified
     if (filters.officeLocation && filters.officeLocation.length > 0) {
       filteredData = filteredData.filter(roommate => 
-        filters.officeLocation.includes(roommate.officeLocation)
+        filters.officeLocation!.includes(roommate.officeLocation)
       );
     }
     
@@ -41,7 +45,7 @@ export async function getRoommates(filters = {}) {
     if (filters.neighborhood && filters.neighborhood.length > 0) {
       filteredData = filteredData.filter(roommate => 
         roommate.preferredNeighborhoods.some(n => 
-          filters.neighborhood.includes(n)
+          filters.neighborhood!.includes(n)
         )
       );
     }
@@ -70,7 +74,7 @@ export async function getRoommates(filters = {}) {
     if (filters.lifestyleTags && filters.lifestyleTags.length > 0) {
       filteredData = filteredData.filter(roommate => 
         roommate.lifestyleTags.some(tag => 
-          filters.lifestyleTags.includes(tag)
+          filters.lifestyleTags!.includes(tag)
         )
       );
     }

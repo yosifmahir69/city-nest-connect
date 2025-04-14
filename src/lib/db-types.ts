@@ -63,7 +63,19 @@ export type RPCInviteCodeType = {
   used_at?: string | null;
 };
 
-// RPC function response types
+// Define FilterType for roommates
+export interface RoommateFilters {
+  gender?: string[];
+  company?: string[];
+  officeLocation?: string[];
+  neighborhood?: string[];
+  budgetMin?: number;
+  budgetMax?: number;
+  hasCar?: boolean | null;
+  lifestyleTags?: string[];
+}
+
+// RPC function types
 export interface RPCFunctions {
   get_conversations: {
     Args: { user_id: string };

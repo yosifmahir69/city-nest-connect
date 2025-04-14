@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -58,11 +57,7 @@ const Dashboard = () => {
       
       console.log('Fetching roommates with filters:', filters);
       
-      const appliedFilters = {
-        ...filters,
-      };
-      
-      const { data, error } = await getRoommates(appliedFilters);
+      const { data, error } = await getRoommates(filters);
       
       if (error) {
         throw error;
