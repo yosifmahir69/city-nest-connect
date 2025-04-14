@@ -4,11 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Loader2, Search, Send } from 'lucide-react';
 import { getConversations, getMessages, markMessagesAsRead, sendMessage } from '@/lib/supabase';
-import { Conversation, Message, User } from '@/types';
+import { Conversation, Message } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import { format, isToday, isYesterday } from 'date-fns';
 

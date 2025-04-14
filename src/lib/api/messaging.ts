@@ -1,13 +1,18 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { RPCConversationType, RPCMessageType } from '../db-types';
+import { 
+  RPCConversationType, 
+  RPCMessageType, 
+  RPCFunctionArgs,
+  RPCFunctionReturns
+} from '../db-types';
 
 // Messaging related functions
 export async function getConversations(userId: string) {
   try {
     const { data, error } = await supabase.rpc<
-      RPCConversationType[],
-      { user_id: string }
+      RPCFunctionReturns<'get_conversations'>,
+      RPCFunctionArgs<'get_conversations'>
     >(
       'get_conversations',
       { user_id: userId }
@@ -28,8 +33,8 @@ export async function getMessages(conversationId: string) {
   try {
     // Get all messages for this conversation
     const { data: messages, error: messagesError } = await supabase.rpc<
-      RPCMessageType[],
-      { conversation_id_param: string }
+      RPCFunctionReturns<'get_messages_for_conversation'>,
+      RPCFunctionArgs<'get_messages_for_conversation'>
     >(
       'get_messages_for_conversation',
       { conversation_id_param: conversationId }
@@ -49,8 +54,8 @@ export async function getMessages(conversationId: string) {
 export async function countUnreadMessages(conversationId: string, userId: string) {
   try {
     const { data, error } = await supabase.rpc<
-      { count: number },
-      { conversation_id_param: string; user_id_param: string }
+      RPCFunctionReturns<'count_unread_messages'>,
+      RPCFunctionArgs<'count_unread_messages'>
     >(
       'count_unread_messages',
       { 
@@ -74,8 +79,8 @@ export async function getOrCreateConversation(participant1Id: string, participan
   try {
     // Use RPC function to get or create a conversation between two users
     const { data, error } = await supabase.rpc<
-      RPCConversationType,
-      { participant1_id_param: string; participant2_id_param: string }
+      RPCFunctionReturns<'get_or_create_conversation'>,
+      RPCFunctionArgs<'get_or_create_conversation'>
     >(
       'get_or_create_conversation',
       { 
@@ -98,13 +103,8 @@ export async function getOrCreateConversation(participant1Id: string, participan
 export async function sendMessage(conversationId: string, senderId: string, receiverId: string, content: string) {
   try {
     const { data, error } = await supabase.rpc<
-      { id: string },
-      { 
-        conversation_id_param: string;
-        sender_id_param: string;
-        receiver_id_param: string;
-        content_param: string;
-      }
+      RPCFunctionReturns<'create_message'>,
+      RPCFunctionArgs<'create_message'>
     >(
       'create_message',
       { 
@@ -129,8 +129,8 @@ export async function sendMessage(conversationId: string, senderId: string, rece
 export async function markMessagesAsRead(conversationId: string, userId: string) {
   try {
     const { data, error } = await supabase.rpc<
-      { success: boolean },
-      { conversation_id_param: string; user_id_param: string }
+      RPCFunctionReturns<'mark_messages_as_read'>,
+      RPCFunctionArgs<'mark_messages_as_read'>
     >(
       'mark_messages_as_read',
       { 

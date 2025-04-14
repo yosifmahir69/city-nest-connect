@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { RoommateFilters } from '../db-types';
+import { RoommateFilters, RPCFunctionArgs, RPCFunctionReturns } from '../db-types';
 
 // Function to get roommates with optional filters
 export async function getRoommates(filters: RoommateFilters = {}) {
@@ -9,8 +9,8 @@ export async function getRoommates(filters: RoommateFilters = {}) {
     
     // Call the get_roommates RPC function
     const { data, error } = await supabase.rpc<
-      any[],
-      Record<string, never>
+      RPCFunctionReturns<'get_roommates'>,
+      RPCFunctionArgs<'get_roommates'>
     >('get_roommates');
     
     if (error) {
