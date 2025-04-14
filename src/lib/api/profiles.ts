@@ -75,6 +75,28 @@ export async function getAllProfiles() {
   return { data: transformedData || [], error: null };
 }
 
+// New function to get all users (for admin panel)
+export async function getAllUsers() {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      throw error;
+    }
+    
+    // Transform the data for frontend use
+    const transformedData = data?.map(profile => transformProfile(profile as ProfileRow));
+    
+    return { data: transformedData || [], error: null };
+  } catch (error) {
+    console.error('Error in getAllUsers:', error);
+    return { data: null, error: error as Error };
+  }
+}
+
 export async function getRoommates(filters: any = {}) {
   console.log("Fetching roommates with filters:", filters);
   

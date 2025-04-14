@@ -10,7 +10,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { User, InviteCode } from '@/types';
-import { generateInviteCode, getInviteCodes, getAllUsers } from '@/lib/supabase';
+import { generateInviteCode, getInviteCodes } from '@/lib/api/admin';
+import { getAllUsers } from '@/lib/api/profiles';
 import { Copy, Users, Key, Search, ClipboardCopy, CheckCircle2 } from 'lucide-react';
 
 // Sample data until Supabase integration
