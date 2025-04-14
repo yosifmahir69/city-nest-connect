@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -8,9 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, Search, Send } from 'lucide-react';
 import { getConversations, getMessages, markMessagesAsRead, sendMessage } from '@/lib/supabase';
-import { Conversation, Message } from '@/types';
-import { useToast } from '@/components/ui/use-toast';
-import { format, isToday, isYesterday } from 'date-fns';
 
 const Messaging = () => {
   const { user } = useAuth();

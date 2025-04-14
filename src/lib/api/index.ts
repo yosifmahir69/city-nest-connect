@@ -1,17 +1,7 @@
 
-// Re-export all functions for easy imports
-
-// Auth functions
+// Export all API functions
 export * from './auth';
-
-// Profile functions
 export * from './profiles';
-
-// Messaging functions
 export * from './messaging';
-
-// Admin functions
+export * from './roommates';
 export * from './admin';
-
-// Roommate functions
-export { getRoommates } from './roommates';
