@@ -8,7 +8,7 @@ import { User } from '@/types';
 import { Search, Filter } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { getRoommates } from '@/lib/supabase';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface FilterState {
   gender: string[];
@@ -21,7 +21,6 @@ interface FilterState {
   lifestyleTags: string[];
 }
 
-// Interface to match what FilterSidebar expects
 interface SidebarFilterState {
   gender: string[];
   company: string[];
@@ -50,7 +49,6 @@ const Dashboard = () => {
   const [roommates, setRoommates] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Function to fetch roommates with filters
   const fetchRoommates = async () => {
     try {
       setIsLoading(true);
@@ -65,7 +63,6 @@ const Dashboard = () => {
       
       console.log('Roommates data from server:', data);
       
-      // Filter by search query if provided
       let filteredData = data || [];
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -89,7 +86,6 @@ const Dashboard = () => {
     }
   };
 
-  // Call fetchRoommates when component mounts or filters change
   useEffect(() => {
     if (user) {
       console.log("Dashboard mounted, fetching roommates");
@@ -97,7 +93,6 @@ const Dashboard = () => {
     }
   }, [user]);
   
-  // Fetch roommates when search query changes
   useEffect(() => {
     if (user) {
       fetchRoommates();
@@ -108,7 +103,6 @@ const Dashboard = () => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   };
 
-  // Convert from our FilterState to SidebarFilterState for the FilterSidebar component
   const convertToSidebarFilters = (filters: FilterState): SidebarFilterState => {
     return {
       gender: filters.gender,
@@ -122,7 +116,6 @@ const Dashboard = () => {
     };
   };
 
-  // Convert from SidebarFilterState back to our FilterState
   const handleSidebarFilterChange = (sidebarFilters: Partial<SidebarFilterState>) => {
     const updatedFilters: Partial<FilterState> = {
       ...sidebarFilters,
@@ -148,12 +141,10 @@ const Dashboard = () => {
     fetchRoommates();
   };
 
-  // Prepare sidebar filters
   const sidebarFilters = convertToSidebarFilters(filters);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Desktop Filter Sidebar */}
       <div className="hidden lg:block w-80 border-r border-gray-200 overflow-y-auto">
         <FilterSidebar 
           filters={sidebarFilters} 
@@ -163,7 +154,6 @@ const Dashboard = () => {
         />
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
@@ -179,7 +169,6 @@ const Dashboard = () => {
                 />
               </div>
               
-              {/* Mobile Filter Button */}
               <Sheet>
                 <SheetTrigger asChild>
                   <Button variant="outline" className="lg:hidden">
@@ -199,7 +188,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Active Filters */}
           {(filters.gender.length > 0 || 
             filters.company.length > 0 || 
             filters.neighborhood.length > 0 || 
@@ -238,7 +226,6 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* Roommate Cards */}
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-roommate-blue"></div>

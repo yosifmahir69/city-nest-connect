@@ -1,8 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { 
-  RPCFunctionName, 
-  RPCFunctions, 
   RPCInviteCodeType, 
   RPCFunctionArgs,
   RPCFunctionReturns

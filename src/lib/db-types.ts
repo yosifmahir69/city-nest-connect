@@ -75,12 +75,6 @@ export interface RoommateFilters {
   lifestyleTags?: string[];
 }
 
-// Define a generic RPC response type that will help with typing
-export interface RPCResponse<T> {
-  data: T;
-  error: Error | null;
-}
-
 // RPC function types
 export interface RPCFunctions {
   get_conversations: {
