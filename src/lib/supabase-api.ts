@@ -61,7 +61,7 @@ export async function getConversations(userId: string) {
         const lastMessage = messagesData && messagesData.length > 0 ? messagesData[0] : null;
         
         // Count unread messages
-        const { count } = await supabase.rpc<{ count: number }>(
+        const { data: countData } = await supabase.rpc<{ count: number }>(
           'count_unread_messages',
           { 
             conversation_id_param: conv.id,
@@ -74,7 +74,7 @@ export async function getConversations(userId: string) {
           conv,
           otherUser,
           lastMessage,
-          count || 0
+          countData?.count || 0
         );
       })
     );
