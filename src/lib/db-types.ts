@@ -34,3 +34,31 @@ export type InviteCodeRow = {
   used_by?: string | null;
   used_at?: string | null;
 };
+
+// Define RPC function return types
+export type RPCConversationType = {
+  id: string;
+  participant1_id: string;
+  participant2_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RPCMessageType = {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  read: boolean;
+  created_at: string;
+};
+
+export type RPCInviteCodeType = {
+  id: string;
+  code: string;
+  created_by: string;
+  created_at: string;
+  used_by?: string | null;
+  used_at?: string | null;
+};

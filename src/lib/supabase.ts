@@ -12,7 +12,8 @@ import {
   getInviteCodes,
   getUserProfile,
   createUserProfile,
-  getRoommates
+  getRoommates,
+  getAllProfiles
 } from './supabase-api';
 
 // Re-export messaging and admin functions
@@ -25,7 +26,8 @@ export {
   getInviteCodes,
   getUserProfile,
   createUserProfile,
-  getRoommates
+  getRoommates,
+  getAllProfiles
 };
 
 // User related functions

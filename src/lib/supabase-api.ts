@@ -2,13 +2,21 @@
 import { supabase } from '@/integrations/supabase/client';
 import { transformProfile, transformMessage, transformConversation } from './data-transformers';
 import { User, Conversation, Message } from '@/types';
-import { ProfileRow, ConversationRow, MessageRow, InviteCodeRow } from './db-types';
+import { 
+  ProfileRow, 
+  ConversationRow, 
+  MessageRow, 
+  InviteCodeRow, 
+  RPCConversationType,
+  RPCMessageType,
+  RPCInviteCodeType
+} from './db-types';
 
 // Messaging related functions
 export async function getConversations(userId: string) {
   try {
     // We'll use RPC for getting conversations
-    const { data: conversationData, error: conversationError } = await supabase.rpc(
+    const { data: conversationData, error: conversationError } = await supabase.rpc<RPCConversationType>(
       'get_conversations',
       { user_id: userId }
     );
@@ -24,7 +32,7 @@ export async function getConversations(userId: string) {
     
     // For each conversation, get the other participant's info and the last message
     const conversations = await Promise.all(
-      conversationData.map(async (conv: any) => {
+      conversationData.map(async (conv: RPCConversationType) => {
         // Determine the other participant
         const otherParticipantId = conv.participant1_id === userId 
           ? conv.participant2_id 
@@ -45,7 +53,7 @@ export async function getConversations(userId: string) {
         const otherUser = transformProfile(profileData as ProfileRow);
         
         // Get the last message
-        const { data: messagesData } = await supabase.rpc(
+        const { data: messagesData } = await supabase.rpc<RPCMessageType>(
           'get_messages_for_conversation',
           { conversation_id_param: conv.id }
         ).order('created_at', { ascending: false }).limit(1);
@@ -53,7 +61,7 @@ export async function getConversations(userId: string) {
         const lastMessage = messagesData && messagesData.length > 0 ? messagesData[0] : null;
         
         // Count unread messages
-        const { count } = await supabase.rpc(
+        const { count } = await supabase.rpc<{ count: number }>(
           'count_unread_messages',
           { 
             conversation_id_param: conv.id,
@@ -86,7 +94,7 @@ export async function getConversations(userId: string) {
 
 export async function getMessages(conversationId: string) {
   try {
-    const { data, error } = await supabase.rpc(
+    const { data, error } = await supabase.rpc<RPCMessageType>(
       'get_messages_for_conversation',
       { conversation_id_param: conversationId }
     ).order('created_at', { ascending: true });
@@ -97,7 +105,7 @@ export async function getMessages(conversationId: string) {
     }
     
     // Transform data for frontend use
-    const transformedData = (data || []).map((message: any) => transformMessage(message));
+    const transformedData = (data || []).map((message: RPCMessageType) => transformMessage(message));
     
     return { data: transformedData || [], error: null };
   } catch (error) {
@@ -109,7 +117,7 @@ export async function getMessages(conversationId: string) {
 export async function sendMessage(senderId: string, receiverId: string, content: string) {
   try {
     // First, check if conversation exists
-    const { data: existingConv, error: convError } = await supabase.rpc(
+    const { data: existingConv, error: convError } = await supabase.rpc<RPCConversationType>(
       'get_or_create_conversation',
       { 
         participant1_id_param: senderId, 
@@ -123,7 +131,7 @@ export async function sendMessage(senderId: string, receiverId: string, content:
     }
     
     // Send the message
-    const { data, error } = await supabase.rpc(
+    const { data, error } = await supabase.rpc<{ id: string }>(
       'create_message',
       {
         conversation_id_param: existingConv.id,
@@ -147,7 +155,7 @@ export async function sendMessage(senderId: string, receiverId: string, content:
 
 export async function markMessagesAsRead(conversationId: string, userId: string) {
   try {
-    const { data, error } = await supabase.rpc(
+    const { data, error } = await supabase.rpc<{ success: boolean }>(
       'mark_messages_as_read',
       {
         conversation_id_param: conversationId,
@@ -167,7 +175,7 @@ export async function generateInviteCode(adminId: string) {
   try {
     const code = `INVITE-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     
-    const { data, error } = await supabase.rpc(
+    const { data, error } = await supabase.rpc<{ id: string }>(
       'create_invite_code',
       {
         code_param: code,
@@ -184,8 +192,9 @@ export async function generateInviteCode(adminId: string) {
 
 export async function getInviteCodes() {
   try {
-    const { data, error } = await supabase.rpc('get_invite_codes')
-      .order('created_at', { ascending: false });
+    const { data, error } = await supabase.rpc<RPCInviteCodeType>(
+      'get_invite_codes'
+    ).order('created_at', { ascending: false });
     
     return { data, error };
   } catch (error) {
