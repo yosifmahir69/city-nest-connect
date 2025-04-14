@@ -67,11 +67,11 @@ export type RPCInviteCodeType = {
 export interface RPCFunctions {
   get_conversations: {
     Args: { user_id: string };
-    Returns: [RPCConversationType];
+    Returns: RPCConversationType[];
   };
   get_messages_for_conversation: {
     Args: { conversation_id_param: string };
-    Returns: [RPCMessageType];
+    Returns: RPCMessageType[];
   };
   count_unread_messages: {
     Args: { conversation_id_param: string; user_id_param: string };
@@ -100,6 +100,6 @@ export interface RPCFunctions {
   };
   get_invite_codes: {
     Args: Record<string, never>;
-    Returns: [RPCInviteCodeType];
+    Returns: RPCInviteCodeType[];
   };
 }
