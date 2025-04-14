@@ -7,7 +7,7 @@ export async function generateInviteCode(adminId: string) {
   try {
     const code = `INVITE-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     
-    const { data, error } = await supabase.rpc(
+    const { data, error } = await supabase.rpc<{ id: string }>(
       'create_invite_code', 
       {
         code_param: code,
@@ -24,10 +24,9 @@ export async function generateInviteCode(adminId: string) {
 
 export async function getInviteCodes() {
   try {
-    const { data, error } = await supabase.rpc<
-      RPCInviteCodeType[]
-    >('get_invite_codes')
-      .order('created_at', { ascending: false });
+    const { data, error } = await supabase.rpc<RPCInviteCodeType[]>(
+      'get_invite_codes'
+    ).order('created_at', { ascending: false });
     
     return { data, error };
   } catch (error) {

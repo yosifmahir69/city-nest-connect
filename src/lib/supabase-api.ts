@@ -3,7 +3,7 @@
 // Please import from src/lib/supabase.ts instead
 
 import { 
-  getAllProfiles,
+  getAllUsers,
   getConversations, 
   getMessages, 
   sendMessage,
@@ -12,12 +12,14 @@ import {
   getInviteCodes,
   getUserProfile,
   createUserProfile,
+  updateUserProfile,
+  uploadProfileImage,
   getRoommates,
 } from './api';
 
 // Re-export for backward compatibility
 export { 
-  getAllProfiles,
+  getAllUsers,
   getConversations, 
   getMessages, 
   sendMessage,
@@ -26,5 +28,7 @@ export {
   getInviteCodes,
   getUserProfile,
   createUserProfile,
+  updateUserProfile,
+  uploadProfileImage,
   getRoommates,
 };

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { transformProfile } from '../data-transformers';
 import { User } from '@/types';
@@ -43,6 +44,86 @@ export async function createUserProfile(userId: string, profileData: Omit<User, 
     return { data, error: null };
   } catch (error) {
     console.error('Error in createUserProfile:', error);
+    return { data: null, error };
+  }
+}
+
+export async function updateUserProfile(userId: string, profileData: Partial<User>) {
+  try {
+    // Convert User object to ProfileRow format
+    const profileRowData: Partial<ProfileRow> = {
+      full_name: profileData.fullName,
+      job_type: profileData.jobType,
+      company: profileData.company,
+      office_location: profileData.officeLocation,
+      start_date: profileData.startDate,
+      end_date: profileData.endDate,
+      has_car: profileData.hasCar,
+      budget_min: profileData.budgetMin,
+      budget_max: profileData.budgetMax,
+      first_time_in_city: profileData.firstTimeInCity,
+      profile_image_url: profileData.profileImage,
+      lifestyle_tags: profileData.lifestyleTags,
+      preferred_neighborhoods: profileData.preferredNeighborhoods,
+      gender: profileData.gender,
+      preferred_roommate_genders: profileData.preferredRoommateGenders,
+      additional_preferences: profileData.additionalPreferences,
+    };
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(profileRowData)
+      .eq('id', userId);
+    
+    if (error) {
+      console.error('Error updating profile:', error);
+      return { data: null, error };
+    }
+    
+    return { data, error: null };
+  } catch (error) {
+    console.error('Error in updateUserProfile:', error);
+    return { data: null, error };
+  }
+}
+
+export async function uploadProfileImage(userId: string, file: File) {
+  try {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userId}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `profile-images/${fileName}`;
+    
+    // Upload the file to Supabase Storage
+    const { error: uploadError } = await supabase
+      .storage
+      .from('public')
+      .upload(filePath, file);
+    
+    if (uploadError) {
+      console.error('Error uploading image:', uploadError);
+      return { data: null, error: uploadError };
+    }
+    
+    // Get the public URL for the uploaded file
+    const { data: { publicUrl } } = supabase
+      .storage
+      .from('public')
+      .getPublicUrl(filePath);
+    
+    // Update the user's profile with the new image URL
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ profile_image_url: publicUrl })
+      .eq('id', userId);
+    
+    if (error) {
+      console.error('Error updating profile with image URL:', error);
+      return { data: null, error };
+    }
+    
+    return { data: { url: publicUrl }, error: null };
+  } catch (error) {
+    console.error('Error in uploadProfileImage:', error);
     return { data: null, error };
   }
 }
