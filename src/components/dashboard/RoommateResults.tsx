@@ -1,19 +1,16 @@
 
 import React from 'react';
 import { RoommateCard } from '@/components/RoommateCard';
-import { Button } from '@/components/ui/button';
 import { User } from '@/types';
 
 interface RoommateResultsProps {
   isLoading: boolean;
   roommates: User[];
-  onResetFilters: () => void;
 }
 
 export const RoommateResults: React.FC<RoommateResultsProps> = ({
   isLoading,
-  roommates,
-  onResetFilters
+  roommates
 }) => {
   if (isLoading) {
     return (
@@ -26,9 +23,8 @@ export const RoommateResults: React.FC<RoommateResultsProps> = ({
   if (roommates.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-xl font-medium text-gray-600">No roommates found matching your criteria</p>
-        <p className="text-gray-500 mt-2">Try adjusting your filters or search query</p>
-        <Button className="mt-4" onClick={onResetFilters}>Reset Filters</Button>
+        <p className="text-xl font-medium text-gray-600">No roommates found</p>
+        <p className="text-gray-500 mt-2">Check back later for more potential roommates</p>
       </div>
     );
   }
