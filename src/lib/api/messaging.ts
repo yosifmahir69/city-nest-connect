@@ -10,7 +10,7 @@ import {
 // Messaging related functions
 export async function getConversations(userId: string) {
   try {
-    const { data, error } = await supabase.rpc(
+    const { data, error } = await supabase.rpc<RPCFunctionReturns<'get_conversations'>>(
       'get_conversations',
       { user_id: userId } as RPCFunctionArgs<'get_conversations'>
     );
@@ -19,7 +19,7 @@ export async function getConversations(userId: string) {
       throw error;
     }
     
-    return { data: data as RPCFunctionReturns<'get_conversations'>, error: null };
+    return { data, error: null };
   } catch (error) {
     console.error('Error fetching conversations:', error);
     return { data: [], error };
@@ -29,7 +29,7 @@ export async function getConversations(userId: string) {
 export async function getMessages(conversationId: string) {
   try {
     // Get all messages for this conversation
-    const { data: messages, error: messagesError } = await supabase.rpc(
+    const { data: messages, error: messagesError } = await supabase.rpc<RPCFunctionReturns<'get_messages_for_conversation'>>(
       'get_messages_for_conversation',
       { conversation_id_param: conversationId } as RPCFunctionArgs<'get_messages_for_conversation'>
     ).order('created_at', { ascending: true });
@@ -38,7 +38,7 @@ export async function getMessages(conversationId: string) {
       throw messagesError;
     }
     
-    return { data: messages as RPCFunctionReturns<'get_messages_for_conversation'>, error: null };
+    return { data: messages, error: null };
   } catch (error) {
     console.error('Error fetching messages:', error);
     return { data: [], error };
@@ -47,7 +47,7 @@ export async function getMessages(conversationId: string) {
 
 export async function countUnreadMessages(conversationId: string, userId: string) {
   try {
-    const { data, error } = await supabase.rpc(
+    const { data, error } = await supabase.rpc<RPCFunctionReturns<'count_unread_messages'>>(
       'count_unread_messages',
       { 
         conversation_id_param: conversationId,
@@ -59,8 +59,7 @@ export async function countUnreadMessages(conversationId: string, userId: string
       throw error;
     }
     
-    const result = data as RPCFunctionReturns<'count_unread_messages'>;
-    return { count: result.count, error: null };
+    return { count: data.count, error: null };
   } catch (error) {
     console.error('Error counting unread messages:', error);
     return { count: 0, error };
@@ -70,7 +69,7 @@ export async function countUnreadMessages(conversationId: string, userId: string
 export async function getOrCreateConversation(participant1Id: string, participant2Id: string) {
   try {
     // Use RPC function to get or create a conversation between two users
-    const { data, error } = await supabase.rpc(
+    const { data, error } = await supabase.rpc<RPCFunctionReturns<'get_or_create_conversation'>>(
       'get_or_create_conversation',
       { 
         participant1_id_param: participant1Id,
@@ -82,7 +81,7 @@ export async function getOrCreateConversation(participant1Id: string, participan
       throw error;
     }
     
-    return { data: data as RPCFunctionReturns<'get_or_create_conversation'>, error: null };
+    return { data, error: null };
   } catch (error) {
     console.error('Error getting or creating conversation:', error);
     return { data: null, error };
@@ -91,7 +90,7 @@ export async function getOrCreateConversation(participant1Id: string, participan
 
 export async function sendMessage(conversationId: string, senderId: string, receiverId: string, content: string) {
   try {
-    const { data, error } = await supabase.rpc(
+    const { data, error } = await supabase.rpc<RPCFunctionReturns<'create_message'>>(
       'create_message',
       { 
         conversation_id_param: conversationId,
@@ -105,7 +104,7 @@ export async function sendMessage(conversationId: string, senderId: string, rece
       throw error;
     }
     
-    return { data: data as RPCFunctionReturns<'create_message'>, error: null };
+    return { data, error: null };
   } catch (error) {
     console.error('Error sending message:', error);
     return { data: null, error };
@@ -114,7 +113,7 @@ export async function sendMessage(conversationId: string, senderId: string, rece
 
 export async function markMessagesAsRead(conversationId: string, userId: string) {
   try {
-    const { data, error } = await supabase.rpc(
+    const { data, error } = await supabase.rpc<RPCFunctionReturns<'mark_messages_as_read'>>(
       'mark_messages_as_read',
       { 
         conversation_id_param: conversationId,
@@ -126,7 +125,7 @@ export async function markMessagesAsRead(conversationId: string, userId: string)
       throw error;
     }
     
-    return { data: data as RPCFunctionReturns<'mark_messages_as_read'>, error: null };
+    return { data, error: null };
   } catch (error) {
     console.error('Error marking messages as read:', error);
     return { data: null, error };

@@ -15,7 +15,7 @@ export {
   getRoommates
 } from './api';
 
-// Export auth functions for backward compatibility
+// Export auth functions 
 export {
   getCurrentUser,
   signIn,
