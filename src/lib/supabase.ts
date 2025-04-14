@@ -9,7 +9,10 @@ import {
   sendMessage,
   markMessagesAsRead, 
   generateInviteCode, 
-  getInviteCodes 
+  getInviteCodes,
+  getUserProfile,
+  createUserProfile,
+  getRoommates
 } from './supabase-api';
 
 // Re-export messaging and admin functions
@@ -19,7 +22,10 @@ export {
   sendMessage,
   markMessagesAsRead, 
   generateInviteCode, 
-  getInviteCodes 
+  getInviteCodes,
+  getUserProfile,
+  createUserProfile,
+  getRoommates
 };
 
 // User related functions
@@ -105,84 +111,10 @@ export async function uploadProfileImage(userId: string, file: File) {
   };
 }
 
-// Fetch the current user's profile data
-export async function getUserProfile(userId: string) {
-  console.log("Getting profile for user:", userId);
-  
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
-  
-  if (error) {
-    console.error('Error fetching user profile:', error);
-    return { data: null, error };
-  }
-  
-  // Transform from snake_case to camelCase for frontend use
-  if (data) {
-    const transformedData = transformProfile(data as ProfileRow);
-    console.log("Transformed profile data:", transformedData);
-    return { data: transformedData, error: null };
-  }
-  
-  return { data: null, error };
-}
-
-// Roommate discovery functions
-export async function getRoommates(filters: any = {}) {
-  console.log("Fetching roommates with filters:", filters);
-  
-  let query = supabase.from('profiles').select('*');
-  
-  // Skip the current user
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    query = query.neq('id', user.id);
-  }
-  
-  // Apply filters
-  if (filters?.gender && filters.gender.length > 0) {
-    query = query.in('gender', filters.gender);
-  }
-  
-  if (filters?.company && filters.company.length > 0) {
-    query = query.ilike('company', `%${filters.company[0]}%`);
-  }
-  
-  if (filters?.budgetMin && filters?.budgetMax) {
-    query = query.gte('budget_min', filters.budgetMin)
-                .lte('budget_max', filters.budgetMax);
-  }
-  
-  if (filters?.neighborhood && filters?.neighborhood.length > 0) {
-    query = query.overlaps('preferred_neighborhoods', filters.neighborhood);
-  }
-  
-  // Execute the query
-  const { data, error } = await query;
-  
-  if (error) {
-    console.error('Error fetching roommates:', error);
-    return { data: null, error };
-  }
-  
-  console.log("Raw roommate data:", data);
-  
-  // Transform the data for frontend use
-  const transformedData = data?.map(profile => transformProfile(profile as ProfileRow));
-  
-  console.log("Transformed roommate data:", transformedData);
-  
-  return { data: transformedData || [], error: null };
-}
-
 export async function getAllUsers() {
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
-    .order('created_at', { ascending: false });
+    .select();
   
   if (error) {
     console.error('Error fetching all users:', error);

@@ -33,7 +33,7 @@ export async function getConversations(userId: string) {
         // Get the other participant's profile
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('*')
+          .select()
           .eq('id', otherParticipantId)
           .single();
           
@@ -192,4 +192,122 @@ export async function getInviteCodes() {
     console.error('Error in getInviteCodes:', error);
     return { data: null, error: error as Error };
   }
+}
+
+// User profile functions
+export async function createUserProfile(userId: string, profileData: any) {
+  console.log("Creating profile for:", userId, profileData);
+  
+  const { fullName, jobType, company, officeLocation, startDate, endDate, gender, 
+    preferredRoommateGenders, hasCar, preferredNeighborhoods, budgetMin, budgetMax, 
+    lifestyleTags, firstTimeInCity, additionalPreferences } = profileData;
+  
+  return supabase
+    .from('profiles')
+    .update({
+      full_name: fullName,
+      job_type: jobType,
+      company,
+      office_location: officeLocation,
+      start_date: startDate,
+      end_date: endDate,
+      gender,
+      preferred_roommate_genders: preferredRoommateGenders,
+      has_car: hasCar,
+      preferred_neighborhoods: preferredNeighborhoods,
+      budget_min: budgetMin,
+      budget_max: budgetMax,
+      lifestyle_tags: lifestyleTags,
+      first_time_in_city: firstTimeInCity,
+      additional_preferences: additionalPreferences,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', userId);
+}
+
+export async function getUserProfile(userId: string) {
+  console.log("Getting profile for user:", userId);
+  
+  const { data, error } = await supabase
+    .from('profiles')
+    .select()
+    .eq('id', userId)
+    .single();
+  
+  if (error) {
+    console.error('Error fetching user profile:', error);
+    return { data: null, error };
+  }
+  
+  // Transform from snake_case to camelCase for frontend use
+  if (data) {
+    const transformedData = transformProfile(data as ProfileRow);
+    console.log("Transformed profile data:", transformedData);
+    return { data: transformedData, error: null };
+  }
+  
+  return { data: null, error };
+}
+
+export async function getAllProfiles() {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select();
+  
+  if (error) {
+    console.error('Error fetching all profiles:', error);
+    return { data: null, error };
+  }
+  
+  // Transform the data for frontend use
+  const transformedData = data?.map(profile => transformProfile(profile as ProfileRow));
+  
+  return { data: transformedData || [], error: null };
+}
+
+export async function getRoommates(filters: any = {}) {
+  console.log("Fetching roommates with filters:", filters);
+  
+  let query = supabase.from('profiles').select();
+  
+  // Skip the current user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    query = query.neq('id', user.id);
+  }
+  
+  // Apply filters
+  if (filters?.gender && filters.gender.length > 0) {
+    query = query.in('gender', filters.gender);
+  }
+  
+  if (filters?.company && filters.company.length > 0) {
+    query = query.ilike('company', `%${filters.company[0]}%`);
+  }
+  
+  if (filters?.budgetMin && filters?.budgetMax) {
+    query = query.gte('budget_min', filters.budgetMin)
+                .lte('budget_max', filters.budgetMax);
+  }
+  
+  if (filters?.neighborhood && filters?.neighborhood.length > 0) {
+    query = query.overlaps('preferred_neighborhoods', filters.neighborhood);
+  }
+  
+  // Execute the query
+  const { data, error } = await query;
+  
+  if (error) {
+    console.error('Error fetching roommates:', error);
+    return { data: null, error };
+  }
+  
+  console.log("Raw roommate data:", data);
+  
+  // Transform the data for frontend use
+  const transformedData = data?.map(profile => transformProfile(profile as ProfileRow));
+  
+  console.log("Transformed roommate data:", transformedData);
+  
+  return { data: transformedData || [], error: null };
 }
