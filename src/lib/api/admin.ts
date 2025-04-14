@@ -1,10 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  RPCInviteCodeType, 
-  RPCFunctionArgs,
-  RPCFunctionReturns
-} from '../db-types';
+import { RoommateFilters, RPCFunctionArgs, RPCFunctionReturns, RPCInviteCodeType } from '../db-types';
 
 // Admin functions
 export async function generateInviteCode(adminId: string) {

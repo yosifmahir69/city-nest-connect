@@ -4,14 +4,15 @@ import { useAuth } from '@/context/AuthContext';
 import { getConversations } from '@/lib/supabase';
 import { Conversation } from '@/types';
 
-export function useConversations() {
+export function useConversations(userId?: string) {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
 
   const fetchConversations = async () => {
-    if (!user) {
+    if (!user && !userId) {
       setConversations([]);
       setLoading(false);
       return;
@@ -19,7 +20,7 @@ export function useConversations() {
 
     try {
       setLoading(true);
-      const { data, error } = await getConversations(user.id);
+      const { data, error } = await getConversations(userId || user?.id || '');
       
       if (error) {
         throw error;
@@ -41,7 +42,15 @@ export function useConversations() {
 
   useEffect(() => {
     fetchConversations();
-  }, [user]);
+  }, [user, userId]);
 
-  return { conversations, loading, error, refetch: fetchConversations };
+  return { 
+    conversations, 
+    loading, 
+    error, 
+    refetch: fetchConversations,
+    isLoading: loading,
+    selectedConversation,
+    setSelectedConversation
+  };
 }

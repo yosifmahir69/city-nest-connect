@@ -12,7 +12,9 @@ export {
   createUserProfile,
   updateUserProfile,
   uploadProfileImage,
-  getRoommates
+  getRoommates,
+  getOrCreateConversation,
+  countUnreadMessages
 } from './api';
 
 // Export auth functions 
@@ -22,8 +24,3 @@ export {
   signOut,
   signUp
 } from './api/auth';
-
-// Export additional messaging functions
-export {
-  getOrCreateConversation
-} from './api/messaging';
