@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { RPCFunctions, RPCInviteCodeType } from '../db-types';
+import { RPCFunctionName, RPCFunctions, RPCInviteCodeType } from '../db-types';
 
 // Admin functions
 export async function generateInviteCode(adminId: string) {
@@ -8,8 +8,8 @@ export async function generateInviteCode(adminId: string) {
     const code = `INVITE-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     
     const { data, error } = await supabase.rpc<
-      RPCFunctions['create_invite_code']['Returns'],
-      RPCFunctions['create_invite_code']['Args']
+      { id: string },
+      { code_param: string; created_by_param: string }
     >(
       'create_invite_code', 
       {
@@ -28,8 +28,8 @@ export async function generateInviteCode(adminId: string) {
 export async function getInviteCodes() {
   try {
     const { data, error } = await supabase.rpc<
-      RPCFunctions['get_invite_codes']['Returns'],
-      RPCFunctions['get_invite_codes']['Args']
+      RPCInviteCodeType[],
+      Record<string, never>
     >(
       'get_invite_codes'
     ).order('created_at', { ascending: false });

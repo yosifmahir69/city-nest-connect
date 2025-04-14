@@ -116,6 +116,9 @@ export interface RPCFunctions {
   };
   get_roommates: {
     Args: Record<string, never>;
-    Returns: any[];
+    Returns: any[]; // Using any[] as we don't have the exact type definition
   };
 }
+
+// Utility type to help with RPC calls
+export type RPCFunctionName = keyof RPCFunctions;

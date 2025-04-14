@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { RoommateFilters, RPCFunctions } from '../db-types';
+import { RoommateFilters } from '../db-types';
 
 // Function to get roommates with optional filters
 export async function getRoommates(filters: RoommateFilters = {}) {
@@ -9,8 +9,8 @@ export async function getRoommates(filters: RoommateFilters = {}) {
     
     // Call the get_roommates RPC function
     const { data, error } = await supabase.rpc<
-      RPCFunctions['get_roommates']['Returns'],
-      RPCFunctions['get_roommates']['Args']
+      any[],
+      Record<string, never>
     >('get_roommates');
     
     if (error) {
@@ -44,7 +44,7 @@ export async function getRoommates(filters: RoommateFilters = {}) {
     // Filter by neighborhood if specified
     if (filters.neighborhood && filters.neighborhood.length > 0) {
       filteredData = filteredData.filter(roommate => 
-        roommate.preferredNeighborhoods.some(n => 
+        roommate.preferredNeighborhoods.some((n: string) => 
           filters.neighborhood!.includes(n)
         )
       );
@@ -73,7 +73,7 @@ export async function getRoommates(filters: RoommateFilters = {}) {
     // Filter by lifestyle tags
     if (filters.lifestyleTags && filters.lifestyleTags.length > 0) {
       filteredData = filteredData.filter(roommate => 
-        roommate.lifestyleTags.some(tag => 
+        roommate.lifestyleTags.some((tag: string) => 
           filters.lifestyleTags!.includes(tag)
         )
       );
