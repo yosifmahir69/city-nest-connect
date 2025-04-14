@@ -62,3 +62,44 @@ export type RPCInviteCodeType = {
   used_by?: string | null;
   used_at?: string | null;
 };
+
+// RPC function response types
+export interface RPCFunctions {
+  get_conversations: {
+    Args: { user_id: string };
+    Returns: RPCConversationType[];
+  };
+  get_messages_for_conversation: {
+    Args: { conversation_id_param: string };
+    Returns: RPCMessageType[];
+  };
+  count_unread_messages: {
+    Args: { conversation_id_param: string; user_id_param: string };
+    Returns: { count: number };
+  };
+  get_or_create_conversation: {
+    Args: { participant1_id_param: string; participant2_id_param: string };
+    Returns: RPCConversationType;
+  };
+  create_message: {
+    Args: {
+      conversation_id_param: string;
+      sender_id_param: string;
+      receiver_id_param: string;
+      content_param: string;
+    };
+    Returns: { id: string };
+  };
+  mark_messages_as_read: {
+    Args: { conversation_id_param: string; user_id_param: string };
+    Returns: { success: boolean };
+  };
+  create_invite_code: {
+    Args: { code_param: string; created_by_param: string };
+    Returns: { id: string };
+  };
+  get_invite_codes: {
+    Args: Record<string, never>;
+    Returns: RPCInviteCodeType[];
+  };
+}
