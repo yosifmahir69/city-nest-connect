@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -12,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { updateUserProfile, uploadProfileImage } from '@/lib/supabase';
+import { updateUserProfile, uploadProfileImage, getUserProfile } from '@/lib/supabase';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -23,7 +22,6 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 
-// Example tags for lifestyle and preferences
 const LIFESTYLE_TAGS = [
   "Early bird", "Night owl", "Gym enthusiast", "Cook at home",
   "Vegetarian", "Vegan", "Social", "Quiet", "Clean", "Studious",
@@ -43,7 +41,6 @@ const ADDITIONAL_PREFERENCES = [
   "Outdoor space", "Near subway", "Quiet building", "Pet-friendly building"
 ];
 
-// Schema for profile creation form
 const profileSchema = z.object({
   fullName: z.string().min(2, { message: "Full name is required" }),
   jobType: z.enum(["internship", "fulltime"], { required_error: "Please select job type" }),
@@ -71,6 +68,8 @@ const CreateProfile = () => {
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [existingProfile, setExistingProfile] = useState<any>(null);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -89,6 +88,30 @@ const CreateProfile = () => {
       additionalPreferences: []
     },
   });
+
+  useEffect(() => {
+    const checkExistingProfile = async () => {
+      if (user) {
+        setIsLoading(true);
+        try {
+          const { data, error } = await getUserProfile(user.id);
+          
+          console.log("Checking for existing profile:", data);
+          
+          if (data && data.fullName) {
+            setExistingProfile(data);
+            navigate('/profile');
+          }
+        } catch (error) {
+          console.error("Error checking for existing profile:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    
+    checkExistingProfile();
+  }, [user, navigate]);
 
   const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -123,7 +146,6 @@ const CreateProfile = () => {
     try {
       setSubmitting(true);
       
-      // Format the data for the database
       const profileData = {
         ...data,
         startDate: format(data.startDate, 'yyyy-MM-dd'),
@@ -132,7 +154,8 @@ const CreateProfile = () => {
         budgetMax: data.budgetRange[1],
       };
 
-      // Upload profile image if provided
+      console.log("Submitting profile data:", profileData);
+
       let profileImageUrl;
       if (data.profileImage) {
         const uploadResult = await uploadProfileImage(user.id, data.profileImage);
@@ -142,7 +165,6 @@ const CreateProfile = () => {
         profileImageUrl = uploadResult.data?.url;
       }
 
-      // Update user profile
       const { error } = await updateUserProfile(user.id, {
         ...profileData,
         profileImage: profileImageUrl
@@ -169,6 +191,14 @@ const CreateProfile = () => {
       setSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-roommate-blue"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">

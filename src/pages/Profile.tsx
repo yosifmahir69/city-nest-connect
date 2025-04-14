@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -33,7 +32,6 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Fetch the user's profile
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) {
@@ -43,14 +41,19 @@ const Profile = () => {
 
       try {
         setIsLoading(true);
+        console.log("Fetching profile for userId:", user.id);
         const { data, error } = await getUserProfile(user.id);
         
         if (error) {
+          console.error("Error fetching profile:", error);
           throw error;
         }
         
+        console.log("Profile data received:", data);
         if (data) {
           setProfileData(data);
+        } else {
+          console.log("No profile data found, redirecting to create profile");
         }
       } catch (error: any) {
         console.error('Error fetching profile:', error);
@@ -67,8 +70,8 @@ const Profile = () => {
     fetchProfile();
   }, [user, toast, navigate]);
 
-  // Redirect to create profile if no profile exists
-  if (!isLoading && !profileData && user) {
+  if (!isLoading && (!profileData || !profileData.fullName) && user) {
+    console.log("No profile data or empty profile, redirecting to create profile");
     return <CreateProfile />;
   }
   
@@ -78,6 +81,7 @@ const Profile = () => {
     try {
       setIsSaving(true);
       
+      console.log("Updating profile with data:", profileData);
       const { error } = await updateUserProfile(user.id, profileData);
       
       if (error) {
@@ -136,7 +140,6 @@ const Profile = () => {
     }
   };
 
-  // Handle field changes in edit mode
   const handleChange = (field: keyof User, value: any) => {
     if (!profileData) return;
     
@@ -362,7 +365,7 @@ const Profile = () => {
                             <select
                               className="border border-gray-300 rounded p-2 w-full"
                               value={profileData.jobType}
-                              onChange={(e) => handleChange('jobType', e.target.value)}
+                              onChange={(e) => handleChange('jobType', e.target.value as 'internship' | 'fulltime')}
                             >
                               <option value="internship">Internship</option>
                               <option value="fulltime">Full-time</option>
@@ -483,7 +486,7 @@ const Profile = () => {
                                 <input
                                   type="checkbox"
                                   id={`gender-${gender}`}
-                                  checked={(profileData.preferredRoommateGenders || []).includes(gender)}
+                                  checked={Array.isArray(profileData.preferredRoommateGenders) && profileData.preferredRoommateGenders.includes(gender)}
                                   onChange={(e) => {
                                     const currentGenders = [...(profileData.preferredRoommateGenders || [])];
                                     if (e.target.checked) {
@@ -504,7 +507,7 @@ const Profile = () => {
                           </div>
                         ) : (
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {(profileData.preferredRoommateGenders || []).map((gender) => (
+                            {Array.isArray(profileData.preferredRoommateGenders) && profileData.preferredRoommateGenders.map((gender) => (
                               <Badge key={gender} variant="outline" className="capitalize">
                                 {gender === "nonbinary" ? "Non-binary" : gender}
                               </Badge>
@@ -525,7 +528,7 @@ const Profile = () => {
                       {isEditMode ? (
                         <textarea
                           className="border border-gray-300 rounded p-2 w-full mt-2"
-                          value={(profileData.preferredNeighborhoods || []).join(', ')}
+                          value={Array.isArray(profileData.preferredNeighborhoods) ? profileData.preferredNeighborhoods.join(', ') : ''}
                           onChange={(e) => {
                             const neighborhoods = e.target.value
                               .split(',')
@@ -537,7 +540,7 @@ const Profile = () => {
                         />
                       ) : (
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {(profileData.preferredNeighborhoods || []).map((neighborhood) => (
+                          {Array.isArray(profileData.preferredNeighborhoods) && profileData.preferredNeighborhoods.map((neighborhood) => (
                             <Badge key={neighborhood} variant="outline">
                               {neighborhood}
                             </Badge>
@@ -553,7 +556,7 @@ const Profile = () => {
                       {isEditMode ? (
                         <textarea
                           className="border border-gray-300 rounded p-2 w-full mt-2"
-                          value={(profileData.lifestyleTags || []).join(', ')}
+                          value={Array.isArray(profileData.lifestyleTags) ? profileData.lifestyleTags.join(', ') : ''}
                           onChange={(e) => {
                             const tags = e.target.value
                               .split(',')
@@ -565,7 +568,7 @@ const Profile = () => {
                         />
                       ) : (
                         <div className="flex flex-wrap gap-1">
-                          {(profileData.lifestyleTags || []).map((tag) => (
+                          {Array.isArray(profileData.lifestyleTags) && profileData.lifestyleTags.map((tag) => (
                             <Badge key={tag} variant="secondary" className="bg-roommate-paleBlue text-roommate-blue">
                               {tag}
                             </Badge>
@@ -581,7 +584,7 @@ const Profile = () => {
                       {isEditMode ? (
                         <textarea
                           className="border border-gray-300 rounded p-2 w-full mt-2"
-                          value={(profileData.additionalPreferences || []).join(', ')}
+                          value={Array.isArray(profileData.additionalPreferences) ? profileData.additionalPreferences.join(', ') : ''}
                           onChange={(e) => {
                             const preferences = e.target.value
                               .split(',')
@@ -593,7 +596,7 @@ const Profile = () => {
                         />
                       ) : (
                         <div className="flex flex-wrap gap-1">
-                          {(profileData.additionalPreferences || []).map((preference) => (
+                          {Array.isArray(profileData.additionalPreferences) && profileData.additionalPreferences.map((preference) => (
                             <Badge key={preference} variant="outline">
                               {preference}
                             </Badge>

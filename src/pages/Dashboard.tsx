@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -67,16 +68,16 @@ const Dashboard = () => {
         throw error;
       }
       
-      console.log('Roommates data:', data);
+      console.log('Roommates data from server:', data);
       
       // Filter by search query if provided
       let filteredData = data || [];
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         filteredData = filteredData.filter(roommate => 
-          roommate.fullName.toLowerCase().includes(query) ||
-          roommate.company.toLowerCase().includes(query) ||
-          roommate.officeLocation.toLowerCase().includes(query)
+          roommate.fullName?.toLowerCase().includes(query) ||
+          roommate.company?.toLowerCase().includes(query) ||
+          roommate.officeLocation?.toLowerCase().includes(query)
         );
       }
       
@@ -96,6 +97,7 @@ const Dashboard = () => {
   // Call fetchRoommates when component mounts or filters change
   useEffect(() => {
     if (user) {
+      console.log("Dashboard mounted, fetching roommates");
       fetchRoommates();
     }
   }, [user]);

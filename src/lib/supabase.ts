@@ -41,6 +41,8 @@ export async function getCurrentUser() {
 
 // Profile related functions
 export async function updateUserProfile(userId: string, profileData: any) {
+  console.log("Updating profile for:", userId, profileData);
+  
   const { fullName, jobType, company, officeLocation, startDate, endDate, gender, 
     preferredRoommateGenders, hasCar, preferredNeighborhoods, budgetMin, budgetMax, 
     lifestyleTags, firstTimeInCity, additionalPreferences } = profileData;
@@ -105,6 +107,8 @@ export async function uploadProfileImage(userId: string, file: File) {
 
 // Fetch the current user's profile data
 export async function getUserProfile(userId: string) {
+  console.log("Getting profile for user:", userId);
+  
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
@@ -119,6 +123,7 @@ export async function getUserProfile(userId: string) {
   // Transform from snake_case to camelCase for frontend use
   if (data) {
     const transformedData = transformProfile(data as ProfileRow);
+    console.log("Transformed profile data:", transformedData);
     return { data: transformedData, error: null };
   }
   
@@ -127,6 +132,8 @@ export async function getUserProfile(userId: string) {
 
 // Roommate discovery functions
 export async function getRoommates(filters: any = {}) {
+  console.log("Fetching roommates with filters:", filters);
+  
   let query = supabase.from('profiles').select('*');
   
   // Skip the current user
@@ -161,8 +168,12 @@ export async function getRoommates(filters: any = {}) {
     return { data: null, error };
   }
   
+  console.log("Raw roommate data:", data);
+  
   // Transform the data for frontend use
   const transformedData = data?.map(profile => transformProfile(profile as ProfileRow));
+  
+  console.log("Transformed roommate data:", transformedData);
   
   return { data: transformedData || [], error: null };
 }
