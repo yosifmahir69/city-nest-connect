@@ -63,7 +63,7 @@ export type RPCInviteCodeType = {
   used_at?: string | null;
 };
 
-// Define FilterType for roommates
+// Define RoommateFilters interface
 export interface RoommateFilters {
   gender?: string[];
   company?: string[];
