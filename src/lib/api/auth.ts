@@ -1,19 +1,49 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-// User related functions
-export async function signUp(email: string, password: string) {
-  return supabase.auth.signUp({ email, password });
+// Auth functions
+export async function getCurrentUser() {
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    return { data: data.user, error };
+  } catch (error) {
+    console.error('Error in getCurrentUser:', error);
+    return { data: null, error };
+  }
 }
 
 export async function signIn(email: string, password: string) {
-  return supabase.auth.signInWithPassword({ email, password });
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { data, error };
+  } catch (error) {
+    console.error('Error in signIn:', error);
+    return { data: null, error };
+  }
+}
+
+export async function signUp(email: string, password: string) {
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    return { data, error };
+  } catch (error) {
+    console.error('Error in signUp:', error);
+    return { data: null, error };
+  }
 }
 
 export async function signOut() {
-  return supabase.auth.signOut();
-}
-
-export async function getCurrentUser() {
-  return supabase.auth.getUser();
+  try {
+    const { error } = await supabase.auth.signOut();
+    return { error };
+  } catch (error) {
+    console.error('Error in signOut:', error);
+    return { error };
+  }
 }

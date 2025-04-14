@@ -6,8 +6,8 @@ import { RoommateFilters, RPCFunctionArgs, RPCFunctionReturns } from '../db-type
 export async function getRoommates(filters?: RoommateFilters) {
   try {
     const { data, error } = await supabase.rpc<
-      RPCFunctionReturns<'get_roommates'>,
-      RPCFunctionArgs<'get_roommates'>
+      any[],
+      Record<string, never>
     >(
       'get_roommates'
     );
