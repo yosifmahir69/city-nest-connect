@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { RPCFunctions } from '../db-types';
+import { RPCFunctions, RPCInviteCodeType } from '../db-types';
 
 // Admin functions
 export async function generateInviteCode(adminId: string) {
@@ -25,7 +25,7 @@ export async function generateInviteCode(adminId: string) {
 export async function getInviteCodes() {
   try {
     const { data, error } = await supabase.rpc<
-      RPCFunctions['get_invite_codes']['Returns'][0][],
+      RPCInviteCodeType[],
       RPCFunctions['get_invite_codes']['Args']
     >('get_invite_codes')
       .order('created_at', { ascending: false });

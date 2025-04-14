@@ -14,7 +14,7 @@ export async function getConversations(userId: string) {
   try {
     // We'll use RPC for getting conversations
     const { data: conversationData, error: conversationError } = await supabase.rpc<
-      RPCFunctions['get_conversations']['Returns'][0][],
+      RPCConversationType[],
       RPCFunctions['get_conversations']['Args']
     >('get_conversations', { user_id: userId });
     
@@ -51,7 +51,7 @@ export async function getConversations(userId: string) {
         
         // Get the last message
         const { data: messagesData } = await supabase.rpc<
-          RPCFunctions['get_messages_for_conversation']['Returns'][0][],
+          RPCMessageType[],
           RPCFunctions['get_messages_for_conversation']['Args']
         >('get_messages_for_conversation', { conversation_id_param: conv.id })
           .order('created_at', { ascending: false })
@@ -94,7 +94,7 @@ export async function getConversations(userId: string) {
 export async function getMessages(conversationId: string) {
   try {
     const { data, error } = await supabase.rpc<
-      RPCFunctions['get_messages_for_conversation']['Returns'][0][],
+      RPCMessageType[],
       RPCFunctions['get_messages_for_conversation']['Args']
     >('get_messages_for_conversation', { conversation_id_param: conversationId })
       .order('created_at', { ascending: true });
@@ -118,7 +118,7 @@ export async function sendMessage(senderId: string, receiverId: string, content:
   try {
     // First, check if conversation exists
     const { data: existingConv, error: convError } = await supabase.rpc<
-      RPCFunctions['get_or_create_conversation']['Returns'],
+      RPCConversationType,
       RPCFunctions['get_or_create_conversation']['Args']
     >('get_or_create_conversation', { 
       participant1_id_param: senderId, 
