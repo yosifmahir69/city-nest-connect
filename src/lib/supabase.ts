@@ -12,5 +12,18 @@ export {
   createUserProfile,
   updateUserProfile,
   uploadProfileImage,
-  getRoommatesFunction as getRoommates
+  getRoommates
 } from './api';
+
+// Export auth functions for backward compatibility
+export {
+  getCurrentUser,
+  signIn,
+  signOut,
+  signUp
+} from './api/auth';
+
+// Export additional messaging functions
+export {
+  getOrCreateConversation
+} from './api/messaging';

@@ -4,8 +4,7 @@ export * from './auth';
 export * from './profiles';
 export * from './messaging';
 
-// Explicitly re-export to resolve ambiguity
-import { getRoommates as getRoommatesFunction } from './roommates';
-export { getRoommatesFunction as getRoommates };
+// Export roommates functions
+export { getRoommates } from './roommates';
 
 export * from './admin';
