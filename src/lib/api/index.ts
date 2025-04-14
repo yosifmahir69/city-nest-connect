@@ -12,3 +12,6 @@ export * from './messaging';
 
 // Admin functions
 export * from './admin';
+
+// Roommate functions
+export * from './roommates';

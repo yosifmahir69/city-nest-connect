@@ -102,4 +102,8 @@ export interface RPCFunctions {
     Args: Record<string, never>;
     Returns: RPCInviteCodeType[];
   };
+  get_roommates: {
+    Args: Record<string, never>;
+    Returns: any[];
+  };
 }

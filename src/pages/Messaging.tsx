@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -26,7 +25,6 @@ const Messaging = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Fetch conversations
   useEffect(() => {
     const fetchConversations = async () => {
       if (!user) return;
@@ -41,7 +39,6 @@ const Messaging = () => {
         
         setConversations(data || []);
         
-        // If there's a conversation, select the first one by default
         if (data.length > 0 && !selectedConversation) {
           setSelectedConversation(data[0]);
         }
@@ -59,13 +56,11 @@ const Messaging = () => {
     
     fetchConversations();
     
-    // Poll for new messages every 30 seconds
     const intervalId = setInterval(fetchConversations, 30000);
     
     return () => clearInterval(intervalId);
   }, [user, toast, selectedConversation]);
   
-  // Fetch messages for selected conversation
   useEffect(() => {
     const fetchMessages = async () => {
       if (!selectedConversation) return;
@@ -77,11 +72,9 @@ const Messaging = () => {
           throw error;
         }
         
-        // Ensure we're setting properly typed Message[] objects
         if (data) {
           setMessages(data);
           
-          // Mark messages as read
           if (user) {
             await markMessagesAsRead(selectedConversation.id, user.id);
           }
@@ -95,13 +88,11 @@ const Messaging = () => {
     
     fetchMessages();
     
-    // Poll for new messages every 5 seconds when a conversation is selected
     const intervalId = setInterval(fetchMessages, 5000);
     
     return () => clearInterval(intervalId);
   }, [selectedConversation, user]);
   
-  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -120,6 +111,7 @@ const Messaging = () => {
       setIsSending(true);
       
       const { error } = await sendMessage(
+        selectedConversation.id,
         user.id,
         selectedConversation.otherUser.id,
         newMessage.trim()
@@ -129,10 +121,8 @@ const Messaging = () => {
         throw error;
       }
       
-      // Clear input field
       setNewMessage('');
       
-      // Refresh messages
       const { data } = await getMessages(selectedConversation.id);
       if (data) {
         setMessages(data);
@@ -196,7 +186,6 @@ const Messaging = () => {
   
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Conversations List */}
       <div className="w-full sm:w-80 md:w-96 border-r border-gray-200 bg-white">
         <div className="p-4 border-b border-gray-200">
           <h1 className="text-xl font-bold mb-4">Messages</h1>
@@ -274,11 +263,9 @@ const Messaging = () => {
         )}
       </div>
       
-      {/* Chat Area */}
       <div className="hidden sm:flex flex-col flex-1 bg-gray-50">
         {selectedConversation ? (
           <>
-            {/* Chat Header */}
             <div className="p-4 border-b border-gray-200 bg-white shadow-sm flex items-center gap-3">
               <Avatar>
                 <AvatarImage 
@@ -297,7 +284,6 @@ const Messaging = () => {
               </div>
             </div>
             
-            {/* Chat Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
               {groupMessagesByDate(messages).map((group, groupIndex) => (
                 <div key={groupIndex} className="space-y-4">
@@ -345,7 +331,6 @@ const Messaging = () => {
               <div ref={messagesEndRef} />
             </div>
             
-            {/* Message Input */}
             <div className="p-4 border-t border-gray-200 bg-white">
               <form onSubmit={handleSendMessage} className="flex gap-2">
                 <Input
@@ -384,7 +369,6 @@ const Messaging = () => {
         )}
       </div>
       
-      {/* Mobile Selected Conversation View */}
       {selectedConversation && (
         <div className="fixed inset-0 bg-white z-50 sm:hidden flex flex-col">
           <div className="p-4 border-b border-gray-200 bg-white shadow-sm flex items-center gap-3">

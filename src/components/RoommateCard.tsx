@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Building, Calendar, MapPin, MessageSquare } from 'lucide-react';
 import { User } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-import { sendMessage } from '@/lib/supabase';
+import { getOrCreateConversation, sendMessage } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 
 interface RoommateCardProps {
@@ -38,8 +38,21 @@ export const RoommateCard: React.FC<RoommateCardProps> = ({ roommate }) => {
     }
 
     try {
-      // Send an initial empty message to create the conversation
-      await sendMessage(user.id, roommate.id, `Hey! I'm interested in connecting as potential roommates.`);
+      // First get or create a conversation between these users
+      const conversationResult = await getOrCreateConversation(user.id, roommate.id);
+      
+      if (!conversationResult.data) {
+        throw new Error("Could not create conversation");
+      }
+      
+      // Send message in the conversation
+      await sendMessage(
+        conversationResult.data.id, 
+        user.id, 
+        roommate.id, 
+        `Hey! I'm interested in connecting as potential roommates.`
+      );
+      
       navigate('/messaging');
       
       toast({
